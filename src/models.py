@@ -147,11 +147,6 @@ class DataRetrievalResult:
 class SymbolValidator:
     """Validates cryptocurrency symbol formats."""
     
-    VALID_SYMBOLS = {
-        'BTC-USD', 'ETH-USD', 'ADA-USD', 'DOT-USD', 'LINK-USD',
-        'UNI-USD', 'LTC-USD', 'BCH-USD', 'XLM-USD', 'FIL-USD'
-    }
-    
     @classmethod
     def is_valid_symbol(cls, symbol: str) -> bool:
         """Check if symbol is valid."""
@@ -170,8 +165,16 @@ class SymbolValidator:
         if not base or not quote:
             return False
         
-        # Check against known valid symbols
-        return symbol.upper() in cls.VALID_SYMBOLS
+        # Additional validation: check if it's a reasonable format
+        # Base should be 2-10 characters, quote should be 3 characters (like USD, EUR, etc.)
+        if len(base) < 2 or len(base) > 10 or len(quote) != 3:
+            return False
+        
+        # Check if both parts contain only alphanumeric characters
+        if not base.isalnum() or not quote.isalnum():
+            return False
+        
+        return True
     
     @classmethod
     def normalize_symbol(cls, symbol: str) -> str:
