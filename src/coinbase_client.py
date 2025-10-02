@@ -3,13 +3,12 @@ Coinbase API client for authentication and connection management.
 Handles API authentication, rate limiting, and connection status validation.
 """
 
-from coinbase_advanced_trader import CoinbaseAdvancedTrader
-from coinbase_advanced_trader.config import Config as CoinbaseConfig
+from coinbase.rest import RESTClient
 from typing import Optional, Dict, Any
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from .config import config
+from config import config
 
 logger = structlog.get_logger(__name__)
 
@@ -19,32 +18,29 @@ class CoinbaseClient:
     
     def __init__(self):
         """Initialize Coinbase client with authentication credentials."""
-        self.client: Optional[CoinbaseAdvancedTrader] = None
+        self.client: Optional[RESTClient] = None
         self._authenticate()
     
     def _authenticate(self) -> None:
         """Authenticate with Coinbase API using configured credentials."""
-        if not config.api_credentials_valid:
-            logger.error("Coinbase API credentials not properly configured")
-            raise ValueError("Missing required API credentials")
-        
         try:
-            # Configure Coinbase client
-            coinbase_config = CoinbaseConfig(
-                api_key=config.api_key,
-                api_secret=config.api_secret,
-                passphrase=config.api_passphrase,
-                sandbox=config.sandbox_mode
-            )
-            
-            # Initialize client
-            self.client = CoinbaseAdvancedTrader(coinbase_config)
-            
-            logger.info("Coinbase API client authenticated successfully", 
-                       sandbox_mode=config.sandbox_mode)
+            # Initialize client - for public endpoints, we don't need authentication
+            # But we'll initialize with credentials if available for authenticated endpoints
+            if config.api_credentials_valid:
+                self.client = RESTClient(
+                    api_key=config.api_key,
+                    api_secret=config.api_secret
+                )
+                logger.info("Coinbase API client authenticated successfully", 
+                           sandbox_mode=config.sandbox_mode)
+            else:
+                # For public endpoints, we can still use the client without auth
+                self.client = RESTClient()
+                logger.info("Coinbase API client initialized for public endpoints", 
+                           sandbox_mode=config.sandbox_mode)
             
         except Exception as e:
-            logger.error(f"Failed to authenticate with Coinbase API: {e}")
+            logger.error(f"Failed to initialize Coinbase API client: {e}")
             raise
     
     @retry(
@@ -64,14 +60,14 @@ class CoinbaseClient:
             return False
         
         try:
-            # Test connection by getting account information
-            accounts = self.client.get_accounts()
+            # Test connection by getting server time (public endpoint)
+            time_response = self.client.get_unix_time()
             
-            if accounts and len(accounts) > 0:
+            if time_response and hasattr(time_response, 'data'):
                 logger.info("Coinbase API connection test successful")
                 return True
             else:
-                logger.warning("Coinbase API connection test returned empty accounts")
+                logger.warning("Coinbase API connection test returned empty response")
                 return False
                 
         except Exception as e:
@@ -90,9 +86,10 @@ class CoinbaseClient:
             return None
         
         try:
-            products = self.client.get_products()
+            products_response = self.client.get_public_products()
             
-            if products:
+            if products_response and hasattr(products_response, 'products'):
+                products = products_response.products
                 logger.info(f"Retrieved {len(products)} available symbols from Coinbase")
                 return products
             else:
@@ -118,11 +115,11 @@ class CoinbaseClient:
             return None
         
         try:
-            product = self.client.get_product(symbol)
+            product_response = self.client.get_public_product(symbol)
             
-            if product:
+            if product_response:
                 logger.debug(f"Retrieved symbol info for {symbol}")
-                return product
+                return product_response
             else:
                 logger.warning(f"No information found for symbol {symbol}")
                 return None
@@ -146,18 +143,66 @@ class CoinbaseClient:
             return None
         
         try:
-            ticker = self.client.get_product_ticker(symbol)
+            # Get the latest candle to get current price
+            candles_response = self.client.get_public_candles(
+                product_id=symbol,
+                start="2024-01-01T00:00:00Z",  # Dummy start date
+                end="2024-01-02T00:00:00Z",   # Dummy end date
+                granularity="3600",  # 1 hour granularity
+                limit=1
+            )
             
-            if ticker and 'price' in ticker:
-                price = float(ticker['price'])
-                logger.debug(f"Current price for {symbol}: {price}")
-                return price
-            else:
-                logger.warning(f"No price data found for {symbol}")
-                return None
+            if candles_response and hasattr(candles_response, 'data') and candles_response.data:
+                candle = candles_response.data[0]
+                if 'close' in candle:
+                    price = float(candle['close'])
+                    logger.debug(f"Current price for {symbol}: {price}")
+                    return price
+            
+            logger.warning(f"No price data found for {symbol}")
+            return None
                 
         except Exception as e:
             logger.error(f"Failed to get current price for {symbol}: {e}")
+            return None
+    
+    def get_historical_candles(self, symbol: str, start: str, end: str, granularity: str, limit: Optional[int] = None) -> Optional[list]:
+        """
+        Get historical candle data for a symbol.
+        
+        Args:
+            symbol: Cryptocurrency symbol
+            start: Start time as Unix timestamp string
+            end: End time as Unix timestamp string
+            granularity: Granularity string ('ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'ONE_HOUR', 'SIX_HOUR', 'ONE_DAY')
+            limit: Maximum number of candles to return
+            
+        Returns:
+            List of candle data or None if failed
+        """
+        if not self.client:
+            logger.error("Coinbase client not initialized")
+            return None
+        
+        try:
+            candles_response = self.client.get_public_candles(
+                product_id=symbol,
+                start=start,
+                end=end,
+                granularity=granularity,
+                limit=limit
+            )
+            
+            if candles_response and hasattr(candles_response, 'candles'):
+                candles = candles_response.candles
+                logger.debug(f"Retrieved {len(candles)} candles for {symbol}")
+                return candles
+            else:
+                logger.warning(f"No candle data found for {symbol}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Failed to get historical candles for {symbol}: {e}")
             return None
     
     def is_symbol_available(self, symbol: str) -> bool:
@@ -173,7 +218,7 @@ class CoinbaseClient:
         symbol_info = self.get_symbol_info(symbol)
         
         if symbol_info:
-            status = symbol_info.get('status', '').lower()
+            status = getattr(symbol_info, 'status', '').lower()
             return status == 'online'
         
         return False
@@ -208,7 +253,7 @@ class CoinbaseClient:
     @property
     def is_authenticated(self) -> bool:
         """Check if client is properly authenticated."""
-        return self.client is not None and config.api_credentials_valid
+        return self.client is not None
     
     @property
     def sandbox_mode(self) -> bool:

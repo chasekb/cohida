@@ -45,6 +45,9 @@ class Config:
         self.db_schema = os.getenv("DB_SCHEMA", "mse")
         self.db_table = os.getenv("DB_TABLE", "crypto")
         
+        # Output configuration
+        self.output_dir = os.getenv("OUTPUT_DIR", "outputs")
+        
         logger.info("Database configuration initialized", 
                    host=self.db_host, port=self.db_port, database=self.db_name)
     
@@ -69,7 +72,6 @@ class Config:
                 structlog.stdlib.filter_by_level,
                 structlog.stdlib.add_logger_name,
                 structlog.stdlib.add_log_level,
-                structlog.stdlib.PositionalArgumentsFormatter,
                 structlog.processors.TimeStamper(fmt="iso"),
                 structlog.processors.StackInfoRenderer(),
                 structlog.processors.format_exc_info,

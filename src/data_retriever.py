@@ -9,8 +9,8 @@ from decimal import Decimal
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from .coinbase_client import coinbase_client
-from .models import CryptoPriceData, DataRetrievalRequest, DataRetrievalResult, SymbolValidator
+from coinbase_client import coinbase_client
+from models import CryptoPriceData, DataRetrievalRequest, DataRetrievalResult, SymbolValidator
 
 logger = structlog.get_logger(__name__)
 
@@ -112,23 +112,34 @@ class HistoricalDataRetriever:
             List of raw data dictionaries or None if failed
         """
         try:
-            # Convert datetime objects to ISO format strings
-            start_time = request.start_date.isoformat()
-            end_time = request.end_date.isoformat()
+            # Convert datetime objects to Unix timestamp strings
+            start_time = str(int(request.start_date.timestamp()))
+            end_time = str(int(request.end_date.timestamp()))
+            
+            # Convert granularity from seconds to Coinbase API format
+            granularity_map = {
+                60: 'ONE_MINUTE',
+                300: 'FIVE_MINUTE', 
+                900: 'FIFTEEN_MINUTE',
+                3600: 'ONE_HOUR',
+                21600: 'SIX_HOUR',
+                86400: 'ONE_DAY'
+            }
+            
+            granularity_str = granularity_map.get(request.granularity, 'ONE_HOUR')
             
             logger.debug(f"Fetching data from API", 
                         symbol=request.symbol, 
                         start_time=start_time, 
                         end_time=end_time,
-                        granularity=request.granularity)
+                        granularity=granularity_str)
             
-            # Call Coinbase API for historical data
-            # Note: The actual method name may vary depending on the coinbase-advanced-py library version
-            historical_data = self.client.client.get_product_candles(
-                product_id=request.symbol,
+            # Call Coinbase API for historical data using the new method
+            historical_data = self.client.get_historical_candles(
+                symbol=request.symbol,
                 start=start_time,
                 end=end_time,
-                granularity=request.granularity
+                granularity=granularity_str
             )
             
             if historical_data and isinstance(historical_data, list):
@@ -157,15 +168,15 @@ class HistoricalDataRetriever:
         
         for item in raw_data:
             try:
-                # Parse timestamp (usually Unix timestamp)
-                timestamp = datetime.fromtimestamp(int(item[0]))
+                # Parse timestamp (Unix timestamp string)
+                timestamp = datetime.fromtimestamp(int(item['start']))
                 
-                # Parse price data (order: low, high, open, close, volume)
-                low_price = Decimal(str(item[1]))
-                high_price = Decimal(str(item[2]))
-                open_price = Decimal(str(item[3]))
-                close_price = Decimal(str(item[4]))
-                volume = Decimal(str(item[5]))
+                # Parse price data from dictionary format
+                low_price = Decimal(str(item['low']))
+                high_price = Decimal(str(item['high']))
+                open_price = Decimal(str(item['open']))
+                close_price = Decimal(str(item['close']))
+                volume = Decimal(str(item['volume']))
                 
                 # Create data point
                 data_point = CryptoPriceData(
@@ -180,7 +191,7 @@ class HistoricalDataRetriever:
                 
                 data_points.append(data_point)
                 
-            except (ValueError, IndexError, TypeError) as e:
+            except (ValueError, KeyError, TypeError) as e:
                 logger.warning(f"Failed to parse data point: {item}, error: {e}")
                 continue
         

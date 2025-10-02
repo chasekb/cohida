@@ -11,11 +11,11 @@ import csv
 import json
 from pathlib import Path
 
-from .config import config
-from .coinbase_client import coinbase_client
-from .data_retriever import data_retriever
-from .database import db_manager
-from .models import SymbolValidator, DataRetrievalRequest
+from config import config
+from coinbase_client import coinbase_client
+from data_retriever import data_retriever
+from database import db_manager
+from models import SymbolValidator, DataRetrievalRequest
 
 logger = structlog.get_logger(__name__)
 
@@ -268,12 +268,12 @@ def symbols():
             click.echo(f"Found {len(symbols_data)} available symbols:")
             
             # Filter for USD pairs and display first 20
-            usd_symbols = [s for s in symbols_data if s.get('quote_currency') == 'USD']
+            usd_symbols = [s for s in symbols_data if hasattr(s, 'quote_currency_id') and s.quote_currency_id == 'USD']
             usd_symbols = usd_symbols[:20]  # Limit output
             
             for symbol_info in usd_symbols:
-                symbol = symbol_info.get('product_id', 'Unknown')
-                status = symbol_info.get('status', 'Unknown')
+                symbol = getattr(symbol_info, 'product_id', 'Unknown')
+                status = getattr(symbol_info, 'status', 'Unknown')
                 click.echo(f"  {symbol} ({status})")
             
             if len(usd_symbols) == 20:

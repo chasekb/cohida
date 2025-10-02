@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=crypto_data
+      - POSTGRES_DB=bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8
       - POSTGRES_USER_FILE=/app/db/postgres-u.txt
       - POSTGRES_PASSWORD_FILE=/app/db/postgres-p.txt
     volumes:
