@@ -123,6 +123,61 @@ def retrieve(symbol: str, start_date: Optional[str], end_date: Optional[str],
 
 @cli.command()
 @click.argument('symbol')
+@click.option('--granularity', '-g', type=int, default=3600, 
+              help='Data granularity in seconds (60, 300, 900, 3600, 21600, 86400)')
+@click.option('--max-years', '-y', type=int, default=5, 
+              help='Maximum years to go back (default: 5)')
+@click.option('--output-format', '-f', type=click.Choice(['csv', 'json']), default='csv',
+              help='Output format for data files')
+@click.option('--save-to-db', is_flag=True, default=True, help='Save data to PostgreSQL database')
+def retrieve_all(symbol: str, granularity: int, max_years: int, output_format: str, save_to_db: bool):
+    """Retrieve all available historical data for a symbol."""
+    
+    # Normalize symbol
+    symbol = SymbolValidator.normalize_symbol(symbol)
+    
+    click.echo(f"Retrieving ALL historical data for {symbol} (up to {max_years} years back)")
+    click.echo(f"This may take several minutes due to API rate limits...")
+    
+    # Retrieve all data
+    result = data_retriever.retrieve_all_historical_data(symbol, granularity, max_years)
+    
+    if not result.success:
+        click.echo(f"Error: {result.error_message}")
+        return
+    
+    if result.is_empty:
+        click.echo("No data retrieved.")
+        return
+    
+    click.echo(f"Successfully retrieved {result.data_count} data points")
+    
+    # Save to database if requested
+    if save_to_db:
+        try:
+            written_count = db_manager.write_data(result.data_points)
+            click.echo(f"Saved {written_count} data points to database")
+        except Exception as e:
+            click.echo(f"Error saving to database: {e}")
+    
+    # Save to file
+    timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"{symbol}_ALL_{timestamp_str}.{output_format}"
+    filepath = Path(config.output_dir) / filename
+    
+    try:
+        if output_format == 'csv':
+            _save_to_csv(result.data_points, filepath)
+        else:
+            _save_to_json(result.data_points, filepath)
+        
+        click.echo(f"Complete historical data saved to {filepath}")
+    except Exception as e:
+        click.echo(f"Error saving to file: {e}")
+
+
+@cli.command()
+@click.argument('symbol')
 @click.option('--start-date', '-s', help='Start date (YYYY-MM-DD)')
 @click.option('--end-date', '-e', help='End date (YYYY-MM-DD)')
 @click.option('--output-format', '-f', type=click.Choice(['csv', 'json']), default='csv',

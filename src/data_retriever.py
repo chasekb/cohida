@@ -252,6 +252,113 @@ class HistoricalDataRetriever:
         max_duration = granularity * 300  # Coinbase limit: 300 data points per request
         
         return duration <= max_duration
+    
+    def retrieve_all_historical_data(self, symbol: str, granularity: int = 3600, 
+                                   max_years_back: int = 5) -> DataRetrievalResult:
+        """
+        Retrieve all available historical data for a symbol by chunking requests.
+        
+        Args:
+            symbol: Cryptocurrency symbol
+            granularity: Data granularity in seconds (default: 3600 = 1 hour)
+            max_years_back: Maximum years to go back (default: 5)
+            
+        Returns:
+            DataRetrievalResult with all retrieved data
+        """
+        logger.info(f"Starting complete historical data retrieval for {symbol}", 
+                   granularity=granularity, max_years_back=max_years_back)
+        
+        try:
+            # Validate symbol
+            if not SymbolValidator.is_valid_symbol(symbol):
+                error_msg = f"Invalid symbol format: {symbol}"
+                logger.error(error_msg)
+                return DataRetrievalResult(
+                    symbol=symbol,
+                    success=False,
+                    data_points=[],
+                    error_message=error_msg
+                )
+            
+            # Check if symbol is available
+            if not self.client.is_symbol_available(symbol):
+                error_msg = f"Symbol {symbol} is not available for trading"
+                logger.error(error_msg)
+                return DataRetrievalResult(
+                    symbol=symbol,
+                    success=False,
+                    data_points=[],
+                    error_message=error_msg
+                )
+            
+            # Calculate date range
+            end_date = datetime.utcnow()
+            start_date = end_date - timedelta(days=max_years_back * 365)
+            
+            # Calculate chunk size based on granularity (max 300 data points per request)
+            chunk_duration = granularity * 300
+            chunk_timedelta = timedelta(seconds=chunk_duration)
+            
+            all_data_points = []
+            current_start = start_date
+            chunk_count = 0
+            
+            logger.info(f"Retrieving data in chunks of {chunk_duration} seconds", 
+                       total_duration=(end_date - start_date).total_seconds())
+            
+            while current_start < end_date:
+                chunk_count += 1
+                current_end = min(current_start + chunk_timedelta, end_date)
+                
+                logger.debug(f"Processing chunk {chunk_count}: {current_start} to {current_end}")
+                
+                # Create request for this chunk
+                chunk_request = DataRetrievalRequest(
+                    symbol=symbol,
+                    start_date=current_start,
+                    end_date=current_end,
+                    granularity=granularity
+                )
+                
+                # Retrieve data for this chunk
+                chunk_result = self.retrieve_historical_data(chunk_request)
+                
+                if not chunk_result.success:
+                    logger.warning(f"Chunk {chunk_count} failed: {chunk_result.error_message}")
+                    # Continue with next chunk instead of failing completely
+                    current_start = current_end
+                    continue
+                
+                if chunk_result.data_points:
+                    all_data_points.extend(chunk_result.data_points)
+                    logger.debug(f"Chunk {chunk_count} retrieved {len(chunk_result.data_points)} data points")
+                
+                # Move to next chunk
+                current_start = current_end
+                
+                # Add small delay to respect rate limits
+                import time
+                time.sleep(0.1)
+            
+            logger.info(f"Complete historical data retrieval finished", 
+                       total_chunks=chunk_count, total_data_points=len(all_data_points))
+            
+            return DataRetrievalResult(
+                symbol=symbol,
+                success=True,
+                data_points=all_data_points
+            )
+            
+        except Exception as e:
+            error_msg = f"Failed to retrieve complete historical data for {symbol}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return DataRetrievalResult(
+                symbol=symbol,
+                success=False,
+                data_points=[],
+                error_message=error_msg
+            )
 
 
 # Global historical data retriever instance

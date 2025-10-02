@@ -75,6 +75,12 @@ python src/cli.py retrieve BTC-USD --granularity 3600
 
 # JSON output format
 python src/cli.py retrieve BTC-USD --output-format json
+
+# Retrieve ALL historical data (up to 5 years back)
+python src/cli.py retrieve-all BTC-USD
+
+# Retrieve all data with custom settings
+python src/cli.py retrieve-all BTC-USD --max-years 3 --granularity 86400
 ```
 
 ### Read from Database

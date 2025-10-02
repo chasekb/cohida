@@ -46,6 +46,9 @@ Python application to retrieve historical cryptocurrency data from Coinbase usin
 - **In Progress**: 0
 - **Remaining**: 0
 
+### Phase 6: Enhanced Features
+- [x] Provide option to retrieve all historical data for a symbol
+
 ## Project Status: ✅ COMPLETED
 All development tasks have been successfully completed. The Coinbase Historical Data Retrieval project is ready for deployment and use.
 
