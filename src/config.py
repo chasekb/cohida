@@ -33,17 +33,17 @@ class Config:
     
     def _setup_database_config(self) -> None:
         """Configure database connection settings."""
-        self.db_host = os.getenv("POSTGRES_HOST", "localhost")
+        self.db_host = os.getenv("POSTGRES_HOST", "postgres")
         self.db_port = int(os.getenv("POSTGRES_PORT", "5432"))
-        self.db_name = os.getenv("POSTGRES_DB", "crypto_data")
+        self.db_name = os.getenv("POSTGRES_DB", "bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8")
         
         # Read credentials from files
         self.db_user = self._read_credential_file("POSTGRES_USER_FILE", "db/postgres-u.txt")
         self.db_password = self._read_credential_file("POSTGRES_PASSWORD_FILE", "db/postgres-p.txt")
         
         # Database schema configuration
-        self.db_schema = os.getenv("DB_SCHEMA", "public")
-        self.db_table = os.getenv("DB_TABLE", "crypto_historical_data")
+        self.db_schema = os.getenv("DB_SCHEMA", "mse")
+        self.db_table = os.getenv("DB_TABLE", "crypto")
         
         logger.info("Database configuration initialized", 
                    host=self.db_host, port=self.db_port, database=self.db_name)

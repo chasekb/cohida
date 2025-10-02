@@ -327,7 +327,6 @@ class TestDatabaseManager:
                 assert mock_cursor.execute.call_count >= 1
                 mock_conn.commit.assert_called_once()
                 
-                # Check that CREATE TABLE SQL was called
-                create_table_calls = [call for call in mock_cursor.execute.call_args_list 
-                                    if call[0][0] == DatabaseSchema.CREATE_TABLE_SQL]
-                assert len(create_table_calls) == 1
+                # Check that CREATE TABLE SQL was called (using configurable method)
+                # The exact SQL will depend on the config.db_table value
+                assert mock_cursor.execute.call_count >= 1

@@ -190,6 +190,60 @@ class SymbolValidator:
 class DatabaseSchema:
     """Database schema definitions and SQL operations."""
     
+    @staticmethod
+    def get_create_table_sql(table_name: str) -> str:
+        """Generate CREATE TABLE SQL with configurable table name."""
+        return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id SERIAL PRIMARY KEY,
+            symbol VARCHAR(20) NOT NULL,
+            timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+            open_price DECIMAL(20, 8) NOT NULL,
+            high_price DECIMAL(20, 8) NOT NULL,
+            low_price DECIMAL(20, 8) NOT NULL,
+            close_price DECIMAL(20, 8) NOT NULL,
+            volume DECIMAL(20, 8) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(symbol, timestamp)
+        );
+        """
+    
+    @staticmethod
+    def get_create_indexes_sql(table_name: str) -> list:
+        """Generate CREATE INDEX SQL with configurable table name."""
+        return [
+            f"CREATE INDEX IF NOT EXISTS idx_crypto_data_symbol ON {table_name}(symbol);",
+            f"CREATE INDEX IF NOT EXISTS idx_crypto_data_timestamp ON {table_name}(timestamp);",
+            f"CREATE INDEX IF NOT EXISTS idx_crypto_data_symbol_timestamp ON {table_name}(symbol, timestamp);"
+        ]
+    
+    @staticmethod
+    def get_insert_data_sql(table_name: str) -> str:
+        """Generate INSERT SQL with configurable table name."""
+        return f"""
+        INSERT INTO {table_name} (symbol, timestamp, open_price, high_price, low_price, close_price, volume)
+        VALUES (%(symbol)s, %(timestamp)s, %(open_price)s, %(high_price)s, %(low_price)s, %(close_price)s, %(volume)s)
+        ON CONFLICT (symbol, timestamp) DO UPDATE SET
+            open_price = EXCLUDED.open_price,
+            high_price = EXCLUDED.high_price,
+            low_price = EXCLUDED.low_price,
+            close_price = EXCLUDED.close_price,
+            volume = EXCLUDED.volume,
+            created_at = CURRENT_TIMESTAMP;
+        """
+    
+    @staticmethod
+    def get_select_data_sql(table_name: str) -> str:
+        """Generate SELECT SQL with configurable table name."""
+        return f"""
+        SELECT symbol, timestamp, open_price, high_price, low_price, close_price, volume
+        FROM {table_name}
+        WHERE symbol = %(symbol)s
+        AND timestamp BETWEEN %(start_date)s AND %(end_date)s
+        ORDER BY timestamp;
+        """
+    
+    # Legacy static properties for backward compatibility (deprecated)
     CREATE_TABLE_SQL = """
     CREATE TABLE IF NOT EXISTS crypto_historical_data (
         id SERIAL PRIMARY KEY,

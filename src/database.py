@@ -48,15 +48,17 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
-                    # Create main table
-                    cursor.execute(DatabaseSchema.CREATE_TABLE_SQL)
+                    # Create main table using configurable table name
+                    create_table_sql = DatabaseSchema.get_create_table_sql(config.db_table)
+                    cursor.execute(create_table_sql)
                     
-                    # Create indexes
-                    for index_sql in DatabaseSchema.CREATE_INDEXES_SQL:
+                    # Create indexes using configurable table name
+                    index_sqls = DatabaseSchema.get_create_indexes_sql(config.db_table)
+                    for index_sql in index_sqls:
                         cursor.execute(index_sql)
                     
                     conn.commit()
-                    logger.info("Database schema verified and created if needed")
+                    logger.info("Database schema verified and created if needed", table_name=config.db_table)
         except Exception as e:
             logger.error(f"Failed to ensure schema exists: {e}")
             raise
@@ -101,8 +103,9 @@ class DatabaseManager:
                             # Convert to dictionary for database insertion
                             data_dict = data_point.to_dict()
                             
-                            # Execute insert with conflict resolution
-                            cursor.execute(DatabaseSchema.INSERT_DATA_SQL, data_dict)
+                            # Execute insert with conflict resolution using configurable table name
+                            insert_sql = DatabaseSchema.get_insert_data_sql(config.db_table)
+                            cursor.execute(insert_sql, data_dict)
                             written_count += 1
                             
                             logger.debug(f"Written data point for {data_point.symbol} at {data_point.timestamp}")
@@ -137,7 +140,8 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                    cursor.execute(DatabaseSchema.SELECT_DATA_SQL, {
+                    select_sql = DatabaseSchema.get_select_data_sql(config.db_table)
+                    cursor.execute(select_sql, {
                         'symbol': symbol,
                         'start_date': start_date,
                         'end_date': end_date
@@ -175,7 +179,7 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        "SELECT COUNT(*) FROM crypto_historical_data WHERE symbol = %s",
+                        f"SELECT COUNT(*) FROM {config.db_table} WHERE symbol = %s",
                         (symbol,)
                     )
                     count = cursor.fetchone()[0]
@@ -199,7 +203,7 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        "SELECT MAX(timestamp) FROM crypto_historical_data WHERE symbol = %s",
+                        f"SELECT MAX(timestamp) FROM {config.db_table} WHERE symbol = %s",
                         (symbol,)
                     )
                     result = cursor.fetchone()[0]
