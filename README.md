@@ -12,6 +12,10 @@ cp env.example .env
 
 ### 2. Deploy with Podman Compose
 ```bash
+# Ensure the db_prdnet network exists (should be created by your PostgreSQL setup)
+podman network create db_prdnet 2>/dev/null || true
+
+# Start the application (connects to existing PostgreSQL on db_prdnet)
 podman-compose up -d
 ```
 

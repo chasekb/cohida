@@ -14,29 +14,9 @@ services:
       - ./db:/app/db:ro
       - ./outputs:/app/outputs
       - ./.env:/app/.env:ro
-    depends_on:
-      - postgres
     networks:
-      - crypto-network
-
-  postgres:
-    image: postgres:15
-    container_name: crypto-postgres
-    environment:
-      - POSTGRES_DB=crypto_data
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d:ro
-    ports:
-      - "5432:5432"
-    networks:
-      - crypto-network
-
-volumes:
-  postgres_data:
+      - db_prdnet
 
 networks:
-  crypto-network:
-    driver: bridge
+  db_prdnet:
+    external: true
