@@ -48,17 +48,21 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
-                    # Create main table using configurable table name
-                    create_table_sql = DatabaseSchema.get_create_table_sql(config.db_table)
+                    # Create schema if it doesn't exist
+                    cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {config.db_schema};")
+                    
+                    # Create main table using configurable schema and table name
+                    create_table_sql = DatabaseSchema.get_create_table_sql(f"{config.db_schema}.{config.db_table}")
                     cursor.execute(create_table_sql)
                     
-                    # Create indexes using configurable table name
-                    index_sqls = DatabaseSchema.get_create_indexes_sql(config.db_table)
+                    # Create indexes using configurable schema and table name
+                    index_sqls = DatabaseSchema.get_create_indexes_sql(f"{config.db_schema}.{config.db_table}")
                     for index_sql in index_sqls:
                         cursor.execute(index_sql)
                     
                     conn.commit()
-                    logger.info("Database schema verified and created if needed", table_name=config.db_table)
+                    logger.info("Database schema verified and created if needed", 
+                               schema=config.db_schema, table_name=config.db_table)
         except Exception as e:
             logger.error(f"Failed to ensure schema exists: {e}")
             raise
@@ -103,8 +107,8 @@ class DatabaseManager:
                             # Convert to dictionary for database insertion
                             data_dict = data_point.to_dict()
                             
-                            # Execute insert with conflict resolution using configurable table name
-                            insert_sql = DatabaseSchema.get_insert_data_sql(config.db_table)
+                            # Execute insert with conflict resolution using configurable schema and table name
+                            insert_sql = DatabaseSchema.get_insert_data_sql(f"{config.db_schema}.{config.db_table}")
                             cursor.execute(insert_sql, data_dict)
                             written_count += 1
                             
@@ -140,7 +144,7 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                    select_sql = DatabaseSchema.get_select_data_sql(config.db_table)
+                    select_sql = DatabaseSchema.get_select_data_sql(f"{config.db_schema}.{config.db_table}")
                     cursor.execute(select_sql, {
                         'symbol': symbol,
                         'start_date': start_date,
@@ -179,7 +183,7 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        f"SELECT COUNT(*) FROM {config.db_table} WHERE symbol = %s",
+                        f"SELECT COUNT(*) FROM {config.db_schema}.{config.db_table} WHERE symbol = %s",
                         (symbol,)
                     )
                     count = cursor.fetchone()[0]
@@ -203,7 +207,7 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        f"SELECT MAX(timestamp) FROM {config.db_table} WHERE symbol = %s",
+                        f"SELECT MAX(timestamp) FROM {config.db_schema}.{config.db_table} WHERE symbol = %s",
                         (symbol,)
                     )
                     result = cursor.fetchone()[0]
