@@ -42,8 +42,9 @@ podman-compose exec coinbase-app python src/cli.py retrieve BTC-USD --days 7
 - ✅ **Multiple Symbol Support** - retrieve data for multiple cryptocurrencies at once
 - ✅ **Granularity-Based Table Organization** - separate tables for different time granularities
 - ✅ **Optional CSV Output** - save data to files only when requested
-- ✅ **Flexible Data Granularity** - support for 1m, 5m, 15m, 1h, 6h, 1d intervals
+- ✅ **Flexible Data Granularity** - support for 1m, 5m, 15m, 1h, 6h, 1d intervals with intuitive shorthand
 - ✅ **Auto-Detection of Historical Data** - automatically retrieves ALL available data (10+ years for Bitcoin)
+- ✅ **User-Friendly CLI** - intuitive shorthand options and comprehensive error handling
 
 ## 🏗️ Project Structure
 
@@ -82,7 +83,15 @@ python src/cli.py retrieve BTC-USD ETH-USD ADA-USD --days 7
 # Specific date range
 python src/cli.py retrieve ETH-USD --start-date 2023-01-01 --end-date 2023-01-31
 
-# Custom granularity (1 hour)
+# Custom granularity with shorthand (1 hour)
+python src/cli.py retrieve BTC-USD --granularity 1h
+
+# Different granularities
+python src/cli.py retrieve BTC-USD --granularity 1d --days 7    # Daily data
+python src/cli.py retrieve BTC-USD --granularity 5m --days 1    # 5-minute data
+python src/cli.py retrieve BTC-USD --granularity 6h --days 30   # 6-hour data
+
+# Backward compatibility (numeric seconds still work)
 python src/cli.py retrieve BTC-USD --granularity 3600
 
 # JSON output format
@@ -95,10 +104,10 @@ python src/cli.py retrieve BTC-USD --save-csv
 python src/cli.py retrieve-all BTC-USD
 
 # Retrieve all data for multiple symbols with auto-detection
-python src/cli.py retrieve-all BTC-USD ETH-USD --granularity 86400 --save-csv
+python src/cli.py retrieve-all BTC-USD ETH-USD --granularity 1d --save-csv
 
 # Manually limit to specific years (optional)
-python src/cli.py retrieve-all BTC-USD --max-years 3 --granularity 86400
+python src/cli.py retrieve-all BTC-USD --max-years 3 --granularity 1h
 ```
 
 ### Read from Database
@@ -107,10 +116,12 @@ python src/cli.py retrieve-all BTC-USD --max-years 3 --granularity 86400
 python src/cli.py read BTC-USD
 
 # Read specific date range with granularity
-python src/cli.py read BTC-USD --start-date 2023-01-01 --end-date 2023-01-31 --granularity 3600
+python src/cli.py read BTC-USD --start-date 2023-01-01 --end-date 2023-01-31 --granularity 1h
 
-# Read 1-day granularity data
-python src/cli.py read BTC-USD --granularity 86400
+# Read different granularity data
+python src/cli.py read BTC-USD --granularity 1d    # Daily data
+python src/cli.py read BTC-USD --granularity 5m    # 5-minute data
+python src/cli.py read BTC-USD --granularity 6h    # 6-hour data
 ```
 
 ### Utility Commands
@@ -182,10 +193,20 @@ All major cryptocurrencies available on Coinbase Advanced API, including:
 | `LOG_LEVEL` | Logging level | `INFO` |
 
 ### Data Granularity Options
+
+**Shorthand (Recommended):**
+- `1m` - 1 minute
+- `5m` - 5 minutes  
+- `15m` - 15 minutes
+- `1h` - 1 hour (default)
+- `6h` - 6 hours
+- `1d` - 1 day
+
+**Numeric (Backward Compatible):**
 - `60` - 1 minute
 - `300` - 5 minutes
 - `900` - 15 minutes
-- `3600` - 1 hour (default)
+- `3600` - 1 hour
 - `21600` - 6 hours
 - `86400` - 1 day
 
@@ -237,7 +258,7 @@ For detailed setup instructions, API documentation, and advanced usage, see:
 
 ## ✅ Project Status
 
-**All 29 development tasks completed successfully!**
+**All 30 development tasks completed successfully!**
 
 The project is production-ready with:
 - Complete implementation of all core features
@@ -245,6 +266,7 @@ The project is production-ready with:
 - Granularity-based table organization
 - Optional CSV output functionality
 - **Auto-detection of all available historical data (10+ years)**
+- **User-friendly CLI with intuitive shorthand options**
 - Comprehensive test coverage
 - Full documentation
 - Containerized deployment
