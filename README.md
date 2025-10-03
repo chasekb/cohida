@@ -39,6 +39,10 @@ podman-compose exec coinbase-app python src/cli.py retrieve BTC-USD --days 7
 - ✅ **Containerized Deployment** via podman-compose
 - ✅ **Error Handling** with retry logic and rate limiting
 - ✅ **Structured Logging** with configurable levels
+- ✅ **Multiple Symbol Support** - retrieve data for multiple cryptocurrencies at once
+- ✅ **Granularity-Based Table Organization** - separate tables for different time granularities
+- ✅ **Optional CSV Output** - save data to files only when requested
+- ✅ **Flexible Data Granularity** - support for 1m, 5m, 15m, 1h, 6h, 1d intervals
 
 ## 🏗️ Project Structure
 
@@ -71,6 +75,9 @@ db/
 # Basic usage - last 7 days
 python src/cli.py retrieve BTC-USD
 
+# Multiple symbols at once
+python src/cli.py retrieve BTC-USD ETH-USD ADA-USD --days 7
+
 # Specific date range
 python src/cli.py retrieve ETH-USD --start-date 2023-01-01 --end-date 2023-01-31
 
@@ -80,20 +87,26 @@ python src/cli.py retrieve BTC-USD --granularity 3600
 # JSON output format
 python src/cli.py retrieve BTC-USD --output-format json
 
+# Save to CSV file (optional)
+python src/cli.py retrieve BTC-USD --save-csv
+
 # Retrieve ALL historical data (up to 5 years back)
 python src/cli.py retrieve-all BTC-USD
 
-# Retrieve all data with custom settings
-python src/cli.py retrieve-all BTC-USD --max-years 3 --granularity 86400
+# Retrieve all data for multiple symbols
+python src/cli.py retrieve-all BTC-USD ETH-USD --max-years 3 --granularity 86400 --save-csv
 ```
 
 ### Read from Database
 ```bash
-# Read all data for a symbol
+# Read all data for a symbol (default granularity)
 python src/cli.py read BTC-USD
 
-# Read specific date range
-python src/cli.py read BTC-USD --start-date 2023-01-01 --end-date 2023-01-31
+# Read specific date range with granularity
+python src/cli.py read BTC-USD --start-date 2023-01-01 --end-date 2023-01-31 --granularity 3600
+
+# Read 1-day granularity data
+python src/cli.py read BTC-USD --granularity 86400
 ```
 
 ### Utility Commands
@@ -164,9 +177,20 @@ python src/cli.py --help
 
 ## 📁 Output Files
 
-Data is saved to `outputs/` directory in CSV or JSON format:
+Data is saved to `outputs/` directory in CSV or JSON format (only when `--save-csv` flag is used):
 - **CSV**: `BTC-USD_20231201_143022.csv`
 - **JSON**: `BTC-USD_20231201_143022.json`
+- **Complete Historical**: `BTC-USD_ALL_20231201_143022.csv`
+
+## 🗄️ Database Organization
+
+Data is organized by granularity in separate tables within the same database:
+- **crypto_1m** - 1-minute granularity data
+- **crypto_5m** - 5-minute granularity data  
+- **crypto_15m** - 15-minute granularity data
+- **crypto_1h** - 1-hour granularity data (default)
+- **crypto_6h** - 6-hour granularity data
+- **crypto_1d** - 1-day granularity data
 
 ## 🔍 Troubleshooting
 
@@ -194,10 +218,13 @@ For detailed setup instructions, API documentation, and advanced usage, see:
 
 ## ✅ Project Status
 
-**All 23 development tasks completed successfully!**
+**All 28 development tasks completed successfully!**
 
 The project is production-ready with:
 - Complete implementation of all core features
+- Advanced features including multiple symbol support
+- Granularity-based table organization
+- Optional CSV output functionality
 - Comprehensive test coverage
 - Full documentation
 - Containerized deployment
