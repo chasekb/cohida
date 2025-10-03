@@ -42,7 +42,7 @@ def cli(verbose: bool, output_dir: str):
 
 
 @cli.command()
-@click.argument('symbol')
+@click.argument('symbols', nargs=-1, required=True)
 @click.option('--start-date', '-s', help='Start date (YYYY-MM-DD)')
 @click.option('--end-date', '-e', help='End date (YYYY-MM-DD)')
 @click.option('--days', '-d', type=int, help='Number of days to retrieve (alternative to date range)')
@@ -51,12 +51,10 @@ def cli(verbose: bool, output_dir: str):
 @click.option('--output-format', '-f', type=click.Choice(['csv', 'json']), default='csv',
               help='Output format for data files')
 @click.option('--save-to-db', is_flag=True, default=True, help='Save data to PostgreSQL database')
-def retrieve(symbol: str, start_date: Optional[str], end_date: Optional[str], 
-            days: Optional[int], granularity: int, output_format: str, save_to_db: bool):
-    """Retrieve historical data for a cryptocurrency symbol."""
-    
-    # Normalize symbol
-    symbol = SymbolValidator.normalize_symbol(symbol)
+@click.option('--save-csv', is_flag=True, default=False, help='Save data to CSV file')
+def retrieve(symbols: tuple, start_date: Optional[str], end_date: Optional[str], 
+            days: Optional[int], granularity: int, output_format: str, save_to_db: bool, save_csv: bool):
+    """Retrieve historical data for cryptocurrency symbols."""
     
     # Determine date range
     if days:
@@ -74,55 +72,81 @@ def retrieve(symbol: str, start_date: Optional[str], end_date: Optional[str],
         end_dt = datetime.utcnow()
         start_dt = end_dt - timedelta(days=7)
     
-    click.echo(f"Retrieving data for {symbol} from {start_dt.date()} to {end_dt.date()}")
+    click.echo(f"Retrieving data for {len(symbols)} symbols from {start_dt.date()} to {end_dt.date()}")
     
-    # Create retrieval request
-    request = DataRetrievalRequest(
-        symbol=symbol,
-        start_date=start_dt,
-        end_date=end_dt,
-        granularity=granularity
-    )
+    # Get granularity-specific database manager
+    db_manager = data_retriever.get_database_manager(granularity)
     
-    # Retrieve data
-    result = data_retriever.retrieve_historical_data(request)
+    total_data_points = 0
+    successful_symbols = []
+    failed_symbols = []
     
-    if not result.success:
-        click.echo(f"Error: {result.error_message}")
-        return
-    
-    if result.is_empty:
-        click.echo("No data retrieved.")
-        return
-    
-    click.echo(f"Successfully retrieved {result.data_count} data points")
-    
-    # Save to database if requested
-    if save_to_db:
-        try:
-            written_count = db_manager.write_data(result.data_points)
-            click.echo(f"Saved {written_count} data points to database")
-        except Exception as e:
-            click.echo(f"Error saving to database: {e}")
-    
-    # Save to file
-    timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"{symbol}_{timestamp_str}.{output_format}"
-    filepath = Path(config.output_dir) / filename
-    
-    try:
-        if output_format == 'csv':
-            _save_to_csv(result.data_points, filepath)
-        else:
-            _save_to_json(result.data_points, filepath)
+    for symbol in symbols:
+        # Normalize symbol
+        normalized_symbol = SymbolValidator.normalize_symbol(symbol)
         
-        click.echo(f"Data saved to {filepath}")
-    except Exception as e:
-        click.echo(f"Error saving to file: {e}")
+        click.echo(f"Processing {normalized_symbol}...")
+        
+        # Create retrieval request
+        request = DataRetrievalRequest(
+            symbol=normalized_symbol,
+            start_date=start_dt,
+            end_date=end_dt,
+            granularity=granularity
+        )
+        
+        # Retrieve data
+        result = data_retriever.retrieve_historical_data(request)
+        
+        if not result.success:
+            click.echo(f"  ❌ Error: {result.error_message}")
+            failed_symbols.append(normalized_symbol)
+            continue
+        
+        if result.is_empty:
+            click.echo(f"  ⚠️ No data retrieved for {normalized_symbol}")
+            continue
+        
+        click.echo(f"  ✅ Retrieved {result.data_count} data points")
+        total_data_points += result.data_count
+        successful_symbols.append(normalized_symbol)
+        
+        # Save to database if requested
+        if save_to_db:
+            try:
+                written_count = db_manager.write_data(result.data_points)
+                click.echo(f"  💾 Saved {written_count} data points to database")
+            except Exception as e:
+                click.echo(f"  ❌ Error saving to database: {e}")
+        
+        # Save to file if requested
+        if save_csv:
+            timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"{normalized_symbol}_{timestamp_str}.{output_format}"
+            filepath = Path(config.output_dir) / filename
+            
+            try:
+                if output_format == 'csv':
+                    _save_to_csv(result.data_points, filepath)
+                else:
+                    _save_to_json(result.data_points, filepath)
+                
+                click.echo(f"  📁 Data saved to {filepath}")
+            except Exception as e:
+                click.echo(f"  ❌ Error saving to file: {e}")
+    
+    # Summary
+    click.echo(f"\n📊 Summary:")
+    click.echo(f"  ✅ Successful: {len(successful_symbols)} symbols")
+    click.echo(f"  ❌ Failed: {len(failed_symbols)} symbols")
+    click.echo(f"  📈 Total data points: {total_data_points}")
+    
+    if failed_symbols:
+        click.echo(f"  Failed symbols: {', '.join(failed_symbols)}")
 
 
 @cli.command()
-@click.argument('symbol')
+@click.argument('symbols', nargs=-1, required=True)
 @click.option('--granularity', '-g', type=int, default=3600, 
               help='Data granularity in seconds (60, 300, 900, 3600, 21600, 86400)')
 @click.option('--max-years', '-y', type=int, default=5, 
@@ -130,59 +154,85 @@ def retrieve(symbol: str, start_date: Optional[str], end_date: Optional[str],
 @click.option('--output-format', '-f', type=click.Choice(['csv', 'json']), default='csv',
               help='Output format for data files')
 @click.option('--save-to-db', is_flag=True, default=True, help='Save data to PostgreSQL database')
-def retrieve_all(symbol: str, granularity: int, max_years: int, output_format: str, save_to_db: bool):
-    """Retrieve all available historical data for a symbol."""
+@click.option('--save-csv', is_flag=True, default=False, help='Save data to CSV file')
+def retrieve_all(symbols: tuple, granularity: int, max_years: int, output_format: str, save_to_db: bool, save_csv: bool):
+    """Retrieve all available historical data for symbols."""
     
-    # Normalize symbol
-    symbol = SymbolValidator.normalize_symbol(symbol)
-    
-    click.echo(f"Retrieving ALL historical data for {symbol} (up to {max_years} years back)")
+    click.echo(f"Retrieving ALL historical data for {len(symbols)} symbols (up to {max_years} years back)")
     click.echo(f"This may take several minutes due to API rate limits...")
     
-    # Retrieve all data
-    result = data_retriever.retrieve_all_historical_data(symbol, granularity, max_years)
+    # Get granularity-specific database manager
+    db_manager = data_retriever.get_database_manager(granularity)
     
-    if not result.success:
-        click.echo(f"Error: {result.error_message}")
-        return
+    total_data_points = 0
+    successful_symbols = []
+    failed_symbols = []
     
-    if result.is_empty:
-        click.echo("No data retrieved.")
-        return
-    
-    click.echo(f"Successfully retrieved {result.data_count} data points")
-    
-    # Save to database if requested
-    if save_to_db:
-        try:
-            written_count = db_manager.write_data(result.data_points)
-            click.echo(f"Saved {written_count} data points to database")
-        except Exception as e:
-            click.echo(f"Error saving to database: {e}")
-    
-    # Save to file
-    timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"{symbol}_ALL_{timestamp_str}.{output_format}"
-    filepath = Path(config.output_dir) / filename
-    
-    try:
-        if output_format == 'csv':
-            _save_to_csv(result.data_points, filepath)
-        else:
-            _save_to_json(result.data_points, filepath)
+    for symbol in symbols:
+        # Normalize symbol
+        normalized_symbol = SymbolValidator.normalize_symbol(symbol)
         
-        click.echo(f"Complete historical data saved to {filepath}")
-    except Exception as e:
-        click.echo(f"Error saving to file: {e}")
+        click.echo(f"Processing {normalized_symbol}...")
+        
+        # Retrieve all data
+        result = data_retriever.retrieve_all_historical_data(normalized_symbol, granularity, max_years)
+        
+        if not result.success:
+            click.echo(f"  ❌ Error: {result.error_message}")
+            failed_symbols.append(normalized_symbol)
+            continue
+        
+        if result.is_empty:
+            click.echo(f"  ⚠️ No data retrieved for {normalized_symbol}")
+            continue
+        
+        click.echo(f"  ✅ Retrieved {result.data_count} data points")
+        total_data_points += result.data_count
+        successful_symbols.append(normalized_symbol)
+        
+        # Save to database if requested
+        if save_to_db:
+            try:
+                written_count = db_manager.write_data(result.data_points)
+                click.echo(f"  💾 Saved {written_count} data points to database")
+            except Exception as e:
+                click.echo(f"  ❌ Error saving to database: {e}")
+        
+        # Save to file if requested
+        if save_csv:
+            timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"{normalized_symbol}_ALL_{timestamp_str}.{output_format}"
+            filepath = Path(config.output_dir) / filename
+            
+            try:
+                if output_format == 'csv':
+                    _save_to_csv(result.data_points, filepath)
+                else:
+                    _save_to_json(result.data_points, filepath)
+                
+                click.echo(f"  📁 Complete historical data saved to {filepath}")
+            except Exception as e:
+                click.echo(f"  ❌ Error saving to file: {e}")
+    
+    # Summary
+    click.echo(f"\n📊 Summary:")
+    click.echo(f"  ✅ Successful: {len(successful_symbols)} symbols")
+    click.echo(f"  ❌ Failed: {len(failed_symbols)} symbols")
+    click.echo(f"  📈 Total data points: {total_data_points}")
+    
+    if failed_symbols:
+        click.echo(f"  Failed symbols: {', '.join(failed_symbols)}")
 
 
 @cli.command()
 @click.argument('symbol')
 @click.option('--start-date', '-s', help='Start date (YYYY-MM-DD)')
 @click.option('--end-date', '-e', help='End date (YYYY-MM-DD)')
+@click.option('--granularity', '-g', type=int, default=3600, 
+              help='Data granularity in seconds (60, 300, 900, 3600, 21600, 86400)')
 @click.option('--output-format', '-f', type=click.Choice(['csv', 'json']), default='csv',
               help='Output format for data files')
-def read(symbol: str, start_date: Optional[str], end_date: Optional[str], output_format: str):
+def read(symbol: str, start_date: Optional[str], end_date: Optional[str], granularity: int, output_format: str):
     """Read historical data from database for a symbol."""
     
     # Normalize symbol
@@ -202,6 +252,9 @@ def read(symbol: str, start_date: Optional[str], end_date: Optional[str], output
         start_dt = end_dt - timedelta(days=30)
     
     click.echo(f"Reading data for {symbol} from {start_dt.date()} to {end_dt.date()}")
+    
+    # Get granularity-specific database manager
+    db_manager = data_retriever.get_database_manager(granularity)
     
     try:
         data_points = db_manager.read_data(symbol, start_dt, end_dt)

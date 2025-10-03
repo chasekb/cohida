@@ -11,6 +11,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 from coinbase_client import coinbase_client
 from models import CryptoPriceData, DataRetrievalRequest, DataRetrievalResult, SymbolValidator
+from database import DatabaseManager
 
 logger = structlog.get_logger(__name__)
 
@@ -21,10 +22,17 @@ class HistoricalDataRetriever:
     def __init__(self):
         """Initialize historical data retriever."""
         self.client = coinbase_client
+        self._db_managers = {}  # Cache for granularity-specific database managers
         
         if not self.client.is_authenticated:
             logger.error("Coinbase client not authenticated")
             raise ValueError("Coinbase client authentication required")
+    
+    def get_database_manager(self, granularity: int) -> DatabaseManager:
+        """Get database manager for specific granularity."""
+        if granularity not in self._db_managers:
+            self._db_managers[granularity] = DatabaseManager(granularity)
+        return self._db_managers[granularity]
     
     def retrieve_historical_data(self, request: DataRetrievalRequest) -> DataRetrievalResult:
         """

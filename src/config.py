@@ -35,7 +35,7 @@ class Config:
         """Configure database connection settings."""
         self.db_host = os.getenv("POSTGRES_HOST", "postgres")
         self.db_port = int(os.getenv("POSTGRES_PORT", "5432"))
-        self.db_name = os.getenv("POSTGRES_DB", "bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8")
+        self.base_db_name = os.getenv("POSTGRES_DB", "bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8")
         
         # Read credentials from files
         self.db_user = self._read_credential_file("POSTGRES_USER_FILE", "db/postgres-u.txt")
@@ -48,8 +48,11 @@ class Config:
         # Output configuration
         self.output_dir = os.getenv("OUTPUT_DIR", "outputs")
         
+        # Granularity-based table naming (database separation disabled)
+        self.granularity_table_suffix = os.getenv("GRANULARITY_TABLE_SUFFIX", "true").lower() == "true"
+        
         logger.info("Database configuration initialized", 
-                   host=self.db_host, port=self.db_port, database=self.db_name)
+                   host=self.db_host, port=self.db_port, base_database=self.base_db_name)
     
     def _setup_api_config(self) -> None:
         """Configure Coinbase API settings."""
@@ -115,6 +118,29 @@ class Config:
     def database_credentials_valid(self) -> bool:
         """Check if database credentials are properly configured."""
         return all([self.db_user, self.db_password])
+    
+    def get_database_name(self, granularity: int = None) -> str:
+        """Get database name (always returns base database name)."""
+        return self.base_db_name
+    
+    def get_table_name(self, granularity: int = None) -> str:
+        """Get table name, optionally with granularity suffix."""
+        if granularity and self.granularity_table_suffix:
+            granularity_suffix = self._get_granularity_suffix(granularity)
+            return f"{self.db_table}_{granularity_suffix}"
+        return self.db_table
+    
+    def _get_granularity_suffix(self, granularity: int) -> str:
+        """Convert granularity in seconds to human-readable suffix."""
+        granularity_map = {
+            60: "1m",
+            300: "5m", 
+            900: "15m",
+            3600: "1h",
+            21600: "6h",
+            86400: "1d"
+        }
+        return granularity_map.get(granularity, f"{granularity}s")
 
 
 # Global configuration instance

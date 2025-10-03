@@ -49,8 +49,14 @@ Python application to retrieve historical cryptocurrency data from Coinbase usin
 ### Phase 6: Enhanced Features
 - [x] Provide option to retrieve all historical data for a symbol
 
-## Project Status: ✅ COMPLETED
-All development tasks have been successfully completed. The Coinbase Historical Data Retrieval project is ready for deployment and use.
+### Phase 7: Advanced Features & Optimizations
+- [ ] Create separate databases for different granularities
+- [ ] Append granularity to table name (e.g., crypto_1m for 1 minute granularity)
+- [ ] Create ability to pass multiple symbols at once
+- [ ] Produce CSV output only when requested
+
+## Project Status: ✅ CORE COMPLETED
+Core development tasks have been successfully completed. The Coinbase Historical Data Retrieval project is ready for deployment and use. Additional advanced features are planned for future development.
 
 ## Notes
 - Follow architectural principles: modular design, single responsibility, OOP-first approach

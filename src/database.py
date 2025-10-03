@@ -20,8 +20,9 @@ logger = structlog.get_logger(__name__)
 class DatabaseManager:
     """Manages PostgreSQL database connections and operations."""
     
-    def __init__(self):
+    def __init__(self, granularity: int = None):
         """Initialize database manager with connection pool."""
+        self.granularity = granularity
         self.connection_pool: Optional[SimpleConnectionPool] = None
         self._initialize_connection_pool()
         self._ensure_schema_exists()
@@ -29,19 +30,23 @@ class DatabaseManager:
     def _initialize_connection_pool(self) -> None:
         """Initialize connection pool for database operations."""
         try:
+            db_name = config.get_database_name(self.granularity)
+            
             self.connection_pool = SimpleConnectionPool(
                 minconn=1,
                 maxconn=10,
                 host=config.db_host,
                 port=config.db_port,
-                database=config.db_name,
+                database=db_name,
                 user=config.db_user,
                 password=config.db_password
             )
-            logger.info("Database connection pool initialized successfully")
+            logger.info("Database connection pool initialized successfully", 
+                       database=db_name, granularity=self.granularity)
         except Exception as e:
             logger.error(f"Failed to initialize database connection pool: {e}")
             raise
+    
     
     def _ensure_schema_exists(self) -> None:
         """Ensure database schema and tables exist."""
@@ -51,18 +56,22 @@ class DatabaseManager:
                     # Create schema if it doesn't exist
                     cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {config.db_schema};")
                     
+                    # Get table name with granularity suffix if enabled
+                    table_name = config.get_table_name(self.granularity)
+                    full_table_name = f"{config.db_schema}.{table_name}"
+                    
                     # Create main table using configurable schema and table name
-                    create_table_sql = DatabaseSchema.get_create_table_sql(f"{config.db_schema}.{config.db_table}")
+                    create_table_sql = DatabaseSchema.get_create_table_sql(full_table_name)
                     cursor.execute(create_table_sql)
                     
                     # Create indexes using configurable schema and table name
-                    index_sqls = DatabaseSchema.get_create_indexes_sql(f"{config.db_schema}.{config.db_table}")
+                    index_sqls = DatabaseSchema.get_create_indexes_sql(full_table_name)
                     for index_sql in index_sqls:
                         cursor.execute(index_sql)
                     
                     conn.commit()
                     logger.info("Database schema verified and created if needed", 
-                               schema=config.db_schema, table_name=config.db_table)
+                               schema=config.db_schema, table_name=table_name, granularity=self.granularity)
         except Exception as e:
             logger.error(f"Failed to ensure schema exists: {e}")
             raise
@@ -108,7 +117,9 @@ class DatabaseManager:
                             data_dict = data_point.to_dict()
                             
                             # Execute insert with conflict resolution using configurable schema and table name
-                            insert_sql = DatabaseSchema.get_insert_data_sql(f"{config.db_schema}.{config.db_table}")
+                            table_name = config.get_table_name(self.granularity)
+                            full_table_name = f"{config.db_schema}.{table_name}"
+                            insert_sql = DatabaseSchema.get_insert_data_sql(full_table_name)
                             cursor.execute(insert_sql, data_dict)
                             written_count += 1
                             
@@ -144,7 +155,9 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                    select_sql = DatabaseSchema.get_select_data_sql(f"{config.db_schema}.{config.db_table}")
+                    table_name = config.get_table_name(self.granularity)
+                    full_table_name = f"{config.db_schema}.{table_name}"
+                    select_sql = DatabaseSchema.get_select_data_sql(full_table_name)
                     cursor.execute(select_sql, {
                         'symbol': symbol,
                         'start_date': start_date,
@@ -182,8 +195,10 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
+                    table_name = config.get_table_name(self.granularity)
+                    full_table_name = f"{config.db_schema}.{table_name}"
                     cursor.execute(
-                        f"SELECT COUNT(*) FROM {config.db_schema}.{config.db_table} WHERE symbol = %s",
+                        f"SELECT COUNT(*) FROM {full_table_name} WHERE symbol = %s",
                         (symbol,)
                     )
                     count = cursor.fetchone()[0]
@@ -206,8 +221,10 @@ class DatabaseManager:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cursor:
+                    table_name = config.get_table_name(self.granularity)
+                    full_table_name = f"{config.db_schema}.{table_name}"
                     cursor.execute(
-                        f"SELECT MAX(timestamp) FROM {config.db_schema}.{config.db_table} WHERE symbol = %s",
+                        f"SELECT MAX(timestamp) FROM {full_table_name} WHERE symbol = %s",
                         (symbol,)
                     )
                     result = cursor.fetchone()[0]
@@ -242,5 +259,5 @@ class DatabaseManager:
             logger.info("All database connections closed")
 
 
-# Global database manager instance
+# Global database manager instance (no granularity for backward compatibility)
 db_manager = DatabaseManager()
