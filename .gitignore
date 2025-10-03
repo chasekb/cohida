@@ -118,3 +118,6 @@ Thumbs.db
 outputs/*.csv
 outputs/*.json
 !outputs/.gitkeep
+
+# Database credentials (sensitive)
+db/
