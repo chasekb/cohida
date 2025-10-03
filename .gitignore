@@ -115,9 +115,7 @@ dmypy.json
 Thumbs.db
 
 # Project specific
-outputs/*.csv
-outputs/*.json
-!outputs/.gitkeep
+outputs/
 
 # Database credentials (sensitive)
 db/

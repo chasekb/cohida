@@ -32,9 +32,9 @@ class TestConfig:
         
         assert config.db_host == "localhost"
         assert config.db_port == 5432
-        assert config.db_name == "crypto_data"
+        assert config.base_db_name == "bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8"
         assert config.db_schema == "public"
-        assert config.db_table == "crypto_historical_data"
+        assert config.db_table == "crypto"
     
     def test_api_config_defaults(self):
         """Test API configuration defaults."""

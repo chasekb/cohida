@@ -301,28 +301,41 @@ class TestSymbolValidator:
 class TestDatabaseSchema:
     """Test cases for DatabaseSchema class."""
     
-    def test_create_table_sql_exists(self):
-        """Test that CREATE_TABLE_SQL is defined."""
-        assert DatabaseSchema.CREATE_TABLE_SQL is not None
-        assert "CREATE TABLE" in DatabaseSchema.CREATE_TABLE_SQL
-        assert "crypto_historical_data" in DatabaseSchema.CREATE_TABLE_SQL
-    
-    def test_create_indexes_sql_exists(self):
-        """Test that CREATE_INDEXES_SQL is defined."""
-        assert DatabaseSchema.CREATE_INDEXES_SQL is not None
-        assert len(DatabaseSchema.CREATE_INDEXES_SQL) > 0
+    def test_get_create_table_sql(self):
+        """Test that get_create_table_sql generates correct SQL."""
+        table_name = "test_table"
+        sql = DatabaseSchema.get_create_table_sql(table_name)
         
-        for index_sql in DatabaseSchema.CREATE_INDEXES_SQL:
+        assert "CREATE TABLE" in sql
+        assert table_name in sql
+        assert "symbol" in sql
+        assert "timestamp" in sql
+        assert "open_price" in sql
+    
+    def test_get_create_indexes_sql(self):
+        """Test that get_create_indexes_sql generates correct SQL."""
+        table_name = "test_table"
+        indexes = DatabaseSchema.get_create_indexes_sql(table_name)
+        
+        assert len(indexes) > 0
+        for index_sql in indexes:
             assert "CREATE INDEX" in index_sql
+            assert table_name in index_sql
     
-    def test_insert_data_sql_exists(self):
-        """Test that INSERT_DATA_SQL is defined."""
-        assert DatabaseSchema.INSERT_DATA_SQL is not None
-        assert "INSERT INTO" in DatabaseSchema.INSERT_DATA_SQL
-        assert "ON CONFLICT" in DatabaseSchema.INSERT_DATA_SQL
+    def test_get_insert_data_sql(self):
+        """Test that get_insert_data_sql generates correct SQL."""
+        table_name = "test_table"
+        sql = DatabaseSchema.get_insert_data_sql(table_name)
+        
+        assert "INSERT INTO" in sql
+        assert table_name in sql
+        assert "ON CONFLICT" in sql
     
-    def test_select_data_sql_exists(self):
-        """Test that SELECT_DATA_SQL is defined."""
-        assert DatabaseSchema.SELECT_DATA_SQL is not None
-        assert "SELECT" in DatabaseSchema.SELECT_DATA_SQL
-        assert "FROM crypto_historical_data" in DatabaseSchema.SELECT_DATA_SQL
+    def test_get_select_data_sql(self):
+        """Test that get_select_data_sql generates correct SQL."""
+        table_name = "test_table"
+        sql = DatabaseSchema.get_select_data_sql(table_name)
+        
+        assert "SELECT" in sql
+        assert table_name in sql
+        assert "WHERE symbol" in sql

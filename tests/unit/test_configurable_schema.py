@@ -68,23 +68,6 @@ class TestConfigurableDatabaseSchema:
         assert f"INSERT INTO {table_name}" in insert_sql
         assert f"FROM {table_name}" in select_sql
     
-    def test_legacy_static_properties_still_work(self):
-        """Test that legacy static properties still work for backward compatibility."""
-        # Test legacy CREATE_TABLE_SQL
-        assert "CREATE TABLE IF NOT EXISTS crypto_historical_data" in DatabaseSchema.CREATE_TABLE_SQL
-        assert "id SERIAL PRIMARY KEY" in DatabaseSchema.CREATE_TABLE_SQL
-        
-        # Test legacy CREATE_INDEXES_SQL
-        assert len(DatabaseSchema.CREATE_INDEXES_SQL) == 3
-        assert "idx_crypto_data_symbol ON crypto_historical_data(symbol)" in DatabaseSchema.CREATE_INDEXES_SQL[0]
-        
-        # Test legacy INSERT_DATA_SQL
-        assert "INSERT INTO crypto_historical_data" in DatabaseSchema.INSERT_DATA_SQL
-        assert "VALUES (%(symbol)s, %(timestamp)s" in DatabaseSchema.INSERT_DATA_SQL
-        
-        # Test legacy SELECT_DATA_SQL
-        assert "FROM crypto_historical_data" in DatabaseSchema.SELECT_DATA_SQL
-        assert "WHERE symbol = %(symbol)s" in DatabaseSchema.SELECT_DATA_SQL
     
     def test_different_table_names_generate_different_sql(self):
         """Test that different table names generate different SQL."""

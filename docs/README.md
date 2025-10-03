@@ -252,7 +252,7 @@ The project follows these standards:
 | `COINBASE_SANDBOX` | Enable sandbox mode | `false` |
 | `POSTGRES_HOST` | PostgreSQL host | `postgres` |
 | `POSTGRES_PORT` | PostgreSQL port | `5432` |
-| `POSTGRES_DB` | PostgreSQL database name | `crypto_data` |
+| `POSTGRES_DB` | PostgreSQL database name | `bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8` |
 | `LOG_LEVEL` | Logging level | `INFO` |
 | `LOG_FORMAT` | Log format (json/console) | `json` |
 
