@@ -98,6 +98,7 @@ class DataRetrievalRequest:
     start_date: datetime
     end_date: datetime
     granularity: int = 3600  # Default to 1 hour
+    skip_validation: bool = False  # Skip date range validation for auto-detection
     
     def __post_init__(self):
         """Validate request parameters."""
@@ -110,12 +111,13 @@ class DataRetrievalRequest:
         if self.granularity not in [60, 300, 900, 3600, 21600, 86400]:
             raise ValueError("Granularity must be one of: 60, 300, 900, 3600, 21600, 86400")
         
-        # Validate date range (max 300 data points per request)
-        max_duration = self.granularity * 300
-        duration = (self.end_date - self.start_date).total_seconds()
-        
-        if duration > max_duration:
-            raise ValueError(f"Date range too large for granularity {self.granularity}. Max duration: {max_duration} seconds")
+        # Validate date range (max 300 data points per request) - skip for auto-detection
+        if not self.skip_validation:
+            max_duration = self.granularity * 300
+            duration = (self.end_date - self.start_date).total_seconds()
+            
+            if duration > max_duration:
+                raise ValueError(f"Date range too large for granularity {self.granularity}. Max duration: {max_duration} seconds")
 
 
 @dataclass

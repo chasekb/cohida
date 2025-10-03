@@ -273,14 +273,14 @@ class HistoricalDataRetriever:
         return duration <= max_duration
     
     def retrieve_all_historical_data(self, symbol: str, granularity: int = 3600, 
-                                   max_years_back: int = 5) -> DataRetrievalResult:
+                                   max_years_back: int = None) -> DataRetrievalResult:
         """
-        Retrieve all available historical data for a symbol by chunking requests.
+        Retrieve all available historical data for a symbol by automatically detecting data boundaries.
         
         Args:
             symbol: Cryptocurrency symbol
             granularity: Data granularity in seconds (default: 3600 = 1 hour)
-            max_years_back: Maximum years to go back (default: 5)
+            max_years_back: Maximum years to go back (None = auto-detect all available data)
             
         Returns:
             DataRetrievalResult with all retrieved data
@@ -313,7 +313,14 @@ class HistoricalDataRetriever:
             
             # Calculate date range
             end_date = datetime.utcnow()
-            start_date = end_date - timedelta(days=max_years_back * 365)
+            
+            if max_years_back is None:
+                # Auto-detect earliest available data by starting with a reasonable range
+                # and extending backwards until no more data is found
+                start_date = self._find_earliest_available_data(symbol, granularity, end_date)
+                logger.info(f"Auto-detected earliest data for {symbol}: {start_date}")
+            else:
+                start_date = end_date - timedelta(days=max_years_back * 365)
             
             # Calculate chunk size based on granularity (max 300 data points per request)
             chunk_duration = granularity * 300
@@ -378,6 +385,121 @@ class HistoricalDataRetriever:
                 data_points=[],
                 error_message=error_msg
             )
+    
+    def _find_earliest_available_data(self, symbol: str, granularity: int, end_date: datetime) -> datetime:
+        """
+        Find the earliest available data for a symbol by extending backwards in chunks.
+        
+        Args:
+            symbol: Cryptocurrency symbol
+            granularity: Data granularity in seconds
+            end_date: End date to search from
+            
+        Returns:
+            Earliest available data timestamp
+        """
+        logger.info(f"Finding earliest available data for {symbol}")
+        
+        # Start with a reasonable range and extend backwards
+        # Use smaller chunks to respect API limits (max 350 candles per request)
+        chunk_days = min(300, 350 * granularity // 86400)  # Calculate safe chunk size
+        chunk_timedelta = timedelta(days=chunk_days)
+        
+        # Start from 5 years back and extend backwards
+        current_start = end_date - timedelta(days=5 * 365)
+        earliest_found = None
+        
+        # Try extending backwards in chunks
+        for years_back in [5, 7, 10, 12, 15, 18, 20]:
+            test_start = end_date - timedelta(days=years_back * 365)
+            test_end = min(test_start + chunk_timedelta, end_date)
+            
+            logger.debug(f"Testing data availability from {test_start.date()} to {test_end.date()}")
+            
+            test_request = DataRetrievalRequest(
+                symbol=symbol,
+                start_date=test_start,
+                end_date=test_end,
+                granularity=granularity,
+                skip_validation=True  # Skip validation for auto-detection
+            )
+            
+            test_result = self.retrieve_historical_data(test_request)
+            
+            if test_result.success and test_result.data_points:
+                # Found data, record the earliest timestamp
+                earliest_timestamp = min(dp.timestamp for dp in test_result.data_points)
+                if earliest_found is None or earliest_timestamp < earliest_found:
+                    earliest_found = earliest_timestamp
+                    current_start = test_start
+                    logger.debug(f"Found data from {years_back} years back: {earliest_timestamp}")
+            else:
+                # No data found, we've hit the boundary
+                logger.debug(f"No data found from {years_back} years back")
+                break
+        
+        if earliest_found:
+            logger.info(f"Earliest available data for {symbol}: {earliest_found}")
+            return earliest_found
+        else:
+            # Fallback to 5 years if nothing else works
+            logger.warning(f"Could not find data beyond 5 years, using fallback")
+            return end_date - timedelta(days=5 * 365)
+    
+    def _find_exact_earliest_date(self, symbol: str, granularity: int, start_date: datetime, end_date: datetime) -> datetime:
+        """
+        Find the exact earliest date by checking individual chunks.
+        
+        Args:
+            symbol: Cryptocurrency symbol
+            granularity: Data granularity in seconds
+            start_date: Start date to search from
+            end_date: End date to search to
+            
+        Returns:
+            Exact earliest available data timestamp
+        """
+        logger.info(f"Finding exact earliest date for {symbol}")
+        
+        # Use a reasonable chunk size for searching
+        chunk_duration = granularity * 300
+        chunk_timedelta = timedelta(seconds=chunk_duration)
+        
+        current_start = start_date
+        earliest_found = None
+        
+        while current_start < end_date:
+            current_end = min(current_start + chunk_timedelta, end_date)
+            
+            test_request = DataRetrievalRequest(
+                symbol=symbol,
+                start_date=current_start,
+                end_date=current_end,
+                granularity=granularity,
+                skip_validation=True  # Skip validation for auto-detection
+            )
+            
+            test_result = self.retrieve_historical_data(test_request)
+            
+            if test_result.success and test_result.data_points:
+                # Found data in this chunk, record the earliest timestamp
+                earliest_timestamp = min(dp.timestamp for dp in test_result.data_points)
+                if earliest_found is None or earliest_timestamp < earliest_found:
+                    earliest_found = earliest_timestamp
+                    logger.debug(f"Found earlier data at: {earliest_timestamp}")
+                
+                # Move to next chunk
+                current_start = current_end
+            else:
+                # No data in this chunk, we've found the boundary
+                break
+        
+        if earliest_found:
+            logger.info(f"Earliest available data for {symbol}: {earliest_found}")
+            return earliest_found
+        else:
+            logger.warning(f"Could not find exact earliest date, using start_date: {start_date}")
+            return start_date
 
 
 # Global historical data retriever instance

@@ -149,8 +149,8 @@ def retrieve(symbols: tuple, start_date: Optional[str], end_date: Optional[str],
 @click.argument('symbols', nargs=-1, required=True)
 @click.option('--granularity', '-g', type=int, default=3600, 
               help='Data granularity in seconds (60, 300, 900, 3600, 21600, 86400)')
-@click.option('--max-years', '-y', type=int, default=5, 
-              help='Maximum years to go back (default: 5)')
+@click.option('--max-years', '-y', type=int, default=None, 
+              help='Maximum years to go back (default: auto-detect all available data)')
 @click.option('--output-format', '-f', type=click.Choice(['csv', 'json']), default='csv',
               help='Output format for data files')
 @click.option('--save-to-db', is_flag=True, default=True, help='Save data to PostgreSQL database')
@@ -158,7 +158,10 @@ def retrieve(symbols: tuple, start_date: Optional[str], end_date: Optional[str],
 def retrieve_all(symbols: tuple, granularity: int, max_years: int, output_format: str, save_to_db: bool, save_csv: bool):
     """Retrieve all available historical data for symbols."""
     
-    click.echo(f"Retrieving ALL historical data for {len(symbols)} symbols (up to {max_years} years back)")
+    if max_years is None:
+        click.echo(f"Retrieving ALL available historical data for {len(symbols)} symbols (auto-detecting data boundaries)")
+    else:
+        click.echo(f"Retrieving ALL historical data for {len(symbols)} symbols (up to {max_years} years back)")
     click.echo(f"This may take several minutes due to API rate limits...")
     
     # Get granularity-specific database manager
