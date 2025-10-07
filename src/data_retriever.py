@@ -400,9 +400,11 @@ class HistoricalDataRetriever:
         """
         logger.info(f"Finding earliest available data for {symbol}")
         
-        # Start with a reasonable range and extend backwards
-        # Use smaller chunks to respect API limits (max 350 candles per request)
-        chunk_days = min(300, 350 * granularity // 86400)  # Calculate safe chunk size
+        # Calculate safe chunk size based on granularity
+        # For small granularities, ensure we have at least 1 day
+        max_candles = 300  # Coinbase API limit
+        chunk_duration_seconds = granularity * max_candles
+        chunk_days = max(1, chunk_duration_seconds // 86400)  # Ensure at least 1 day
         chunk_timedelta = timedelta(days=chunk_days)
         
         # Start from 5 years back and extend backwards
@@ -413,6 +415,11 @@ class HistoricalDataRetriever:
         for years_back in [5, 7, 10, 12, 15, 18, 20]:
             test_start = end_date - timedelta(days=years_back * 365)
             test_end = min(test_start + chunk_timedelta, end_date)
+            
+            # Ensure test_start < test_end to avoid validation errors
+            if test_start >= test_end:
+                logger.debug(f"Skipping test for {years_back} years back: start >= end ({test_start} >= {test_end})")
+                continue
             
             logger.debug(f"Testing data availability from {test_start.date()} to {test_end.date()}")
             
