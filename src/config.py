@@ -35,7 +35,7 @@ class Config:
         """Configure database connection settings."""
         self.db_host = os.getenv("POSTGRES_HOST", "postgres")
         self.db_port = int(os.getenv("POSTGRES_PORT", "5432"))
-        self.base_db_name = os.getenv("POSTGRES_DB", "bc1q49yy0k4d6uykytjgqcnre28knfctlxpx892qu8")
+        self.base_db_name = os.getenv("POSTGRES_DB", "_00003300042002")
         
         # Read credentials from files
         self.db_user = self._read_credential_file("POSTGRES_USER_FILE", "db/postgres-u.txt")

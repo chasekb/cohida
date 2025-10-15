@@ -401,11 +401,10 @@ class HistoricalDataRetriever:
         logger.info(f"Finding earliest available data for {symbol}")
         
         # Calculate safe chunk size based on granularity
-        # For small granularities, ensure we have at least 1 day
-        max_candles = 300  # Coinbase API limit
+        # Respect Coinbase API limit of 350 candles per request
+        max_candles = 300  # Use 300 to be safe (API limit is 350)
         chunk_duration_seconds = granularity * max_candles
-        chunk_days = max(1, chunk_duration_seconds // 86400)  # Ensure at least 1 day
-        chunk_timedelta = timedelta(days=chunk_days)
+        chunk_timedelta = timedelta(seconds=chunk_duration_seconds)
         
         # Start from 5 years back and extend backwards
         current_start = end_date - timedelta(days=5 * 365)
