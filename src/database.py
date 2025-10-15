@@ -11,8 +11,8 @@ from datetime import datetime
 import structlog
 from contextlib import contextmanager
 
-from config import config
-from models import CryptoPriceData, DatabaseSchema
+from src.config import config
+from src.models import CryptoPriceData, DatabaseSchema
 
 logger = structlog.get_logger(__name__)
 

@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from config import config
+from src.config import config
 
 logger = structlog.get_logger(__name__)
 

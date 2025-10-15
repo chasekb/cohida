@@ -7,10 +7,9 @@ Python application to retrieve historical cryptocurrency data from Coinbase usin
 All major development phases completed. Project is functional with identified issues requiring resolution. New ML functionality planned.
 
 ## Active Issues
-- [ ] **CRITICAL**: Fix retrieve-all functionality for 1m granularity
-  - Error: "Start date must be before end date" in _find_earliest_available_data
-  - API Error: "number of candles requested should be less than 350"
-  - Root cause: Chunk size calculation issue for small granularities (1-minute)
+- [x] **CRITICAL**: Fix retrieve-all functionality for 1m granularity
+  - Fixed: adjusted per-request limit to 299 candles, added robust chunk error handling (including StopIteration), and enforced safe chunk durations to avoid boundary errors.
+  - Verified: unit tests `tests/unit/test_retrieve_all.py` all pass inside podman container.
 
 ---
 

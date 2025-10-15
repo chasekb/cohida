@@ -113,7 +113,8 @@ class DataRetrievalRequest:
         
         # Validate date range (max 300 data points per request) - skip for auto-detection
         if not self.skip_validation:
-            max_duration = self.granularity * 300
+            # Use a safety margin below the API hard limit (350) to avoid boundary inclusivity issues
+            max_duration = self.granularity * 299
             duration = (self.end_date - self.start_date).total_seconds()
             
             if duration > max_duration:

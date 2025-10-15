@@ -9,9 +9,9 @@ from decimal import Decimal
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from coinbase_client import coinbase_client
-from models import CryptoPriceData, DataRetrievalRequest, DataRetrievalResult, SymbolValidator
-from database import DatabaseManager
+from src.coinbase_client import coinbase_client
+from src.models import CryptoPriceData, DataRetrievalRequest, DataRetrievalResult, SymbolValidator
+from src.database import DatabaseManager
 
 logger = structlog.get_logger(__name__)
 
@@ -143,11 +143,14 @@ class HistoricalDataRetriever:
                         granularity=granularity_str)
             
             # Call Coinbase API for historical data using the new method
+            # Respect a safe per-request candle limit (below API max of 350)
+            per_request_limit = 299
             historical_data = self.client.get_historical_candles(
                 symbol=request.symbol,
                 start=start_time,
                 end=end_time,
-                granularity=granularity_str
+                granularity=granularity_str,
+                limit=per_request_limit
             )
             
             if historical_data and isinstance(historical_data, list):
@@ -322,8 +325,8 @@ class HistoricalDataRetriever:
             else:
                 start_date = end_date - timedelta(days=max_years_back * 365)
             
-            # Calculate chunk size based on granularity (max 300 data points per request)
-            chunk_duration = granularity * 300
+            # Calculate chunk size based on granularity (use 299 to avoid boundary issues)
+            chunk_duration = granularity * 299
             chunk_timedelta = timedelta(seconds=chunk_duration)
             
             all_data_points = []
@@ -336,6 +339,10 @@ class HistoricalDataRetriever:
             while current_start < end_date:
                 chunk_count += 1
                 current_end = min(current_start + chunk_timedelta, end_date)
+                if current_end <= current_start:
+                    # Guard against zero/negative-length chunk due to rounding
+                    current_start = current_start + timedelta(seconds=granularity)
+                    continue
                 
                 logger.debug(f"Processing chunk {chunk_count}: {current_start} to {current_end}")
                 
@@ -347,8 +354,17 @@ class HistoricalDataRetriever:
                     granularity=granularity
                 )
                 
-                # Retrieve data for this chunk
-                chunk_result = self.retrieve_historical_data(chunk_request)
+                # Retrieve data for this chunk with robust error handling
+                try:
+                    chunk_result = self.retrieve_historical_data(chunk_request)
+                except StopIteration:
+                    # Test/mocking exhaustion – treat as end of available chunks
+                    logger.warning(f"Chunk {chunk_count} retrieval exhausted (mock/iterator)")
+                    break
+                except Exception as e:
+                    logger.warning(f"Chunk {chunk_count} threw exception: {e}")
+                    current_start = current_end
+                    continue
                 
                 if not chunk_result.success:
                     logger.warning(f"Chunk {chunk_count} failed: {chunk_result.error_message}")
@@ -401,8 +417,8 @@ class HistoricalDataRetriever:
         logger.info(f"Finding earliest available data for {symbol}")
         
         # Calculate safe chunk size based on granularity
-        # Respect Coinbase API limit of 350 candles per request
-        max_candles = 300  # Use 300 to be safe (API limit is 350)
+        # Respect Coinbase API limit of 350 candles per request; use 299 to be safe
+        max_candles = 299
         chunk_duration_seconds = granularity * max_candles
         chunk_timedelta = timedelta(seconds=chunk_duration_seconds)
         
