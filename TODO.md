@@ -76,25 +76,25 @@ src/ml/utils/
   - pandas, numpy upgrades
 
 ### Phase 2: Training Pipeline
-- [ ] Implement DataSplitter class
+- [x] Implement DataSplitter class
   - Time-based train/val/test splits (70/15/15)
   - Walk-forward validation
   - No lookahead bias
-- [ ] Implement Preprocessor class
+- [x] Implement Preprocessor class
   - Feature scaling/normalization
   - Missing data handling
   - Outlier detection
-- [ ] Implement ModelTrainer class
+- [x] Implement ModelTrainer class
   - XGBoost integration
   - Hyperparameter tuning (GridSearch)
   - Cross-validation (time-series CV)
   - Training session tracking
-- [ ] Implement ModelRegistry class
+- [x] Implement ModelRegistry class
   - Model versioning (semantic versioning)
   - Metadata storage (hyperparameters, metrics)
   - Save/load model artifacts
   - Model comparison utilities
-- [ ] Create training CLI commands
+- [x] Create training CLI commands
   - `ml-train` command with symbol/granularity/model options
   - Progress tracking and logging
   - Training report generation

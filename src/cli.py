@@ -14,7 +14,7 @@ from pathlib import Path
 from src.config import config
 from src.coinbase_client import coinbase_client
 from src.data_retriever import data_retriever
-from src.database import db_manager
+from src.database import db_manager, DatabaseManager
 from src.models import SymbolValidator, DataRetrievalRequest
 
 logger = structlog.get_logger(__name__)
@@ -439,6 +439,228 @@ def _save_to_json(data_points, filepath: Path):
     
     with open(filepath, 'w') as jsonfile:
         json.dump(data, jsonfile, indent=2)
+
+
+@cli.command()
+@click.argument('symbol')
+@click.option('--granularity', '-g', type=str, default='1h',
+              help='Data granularity (1m, 5m, 15m, 1h, 6h, 1d)')
+@click.option('--model-type', '-m', type=click.Choice(['xgboost', 'lightgbm']), default='xgboost',
+              help='ML model type')
+@click.option('--task-type', '-t', type=click.Choice(['classification', 'regression']), default='classification',
+              help='Task type')
+@click.option('--target-col', default='target',
+              help='Target column name')
+@click.option('--tuning', type=click.Choice(['grid', 'random', 'none']), default='none',
+              help='Hyperparameter tuning method')
+@click.option('--cv-folds', type=int, default=5,
+              help='Number of cross-validation folds')
+@click.option('--lookback-days', type=int, default=90,
+              help='Number of days of historical data to use for training')
+@click.option('--model-version', default=None,
+              help='Model version (auto-generated if not provided)')
+@click.option('--registry-path', default='./models',
+              help='Path to model registry')
+def ml_train(
+    symbol: str,
+    granularity: str,
+    model_type: str,
+    task_type: str,
+    target_col: str,
+    tuning: str,
+    cv_folds: int,
+    lookback_days: int,
+    model_version: Optional[str],
+    registry_path: str,
+):
+    """Train ML model for cryptocurrency trend prediction."""
+    from src.ml.model_trainer import ModelTrainer, TrainingConfig
+    from src.ml.preprocessor import PreprocessorConfig
+    from src.ml.model_registry import ModelRegistry
+    from src.ml.feature_engineer import FeatureEngineer
+    
+    # Normalize symbol
+    symbol = SymbolValidator.normalize_symbol(symbol)
+    
+    # Parse granularity
+    granularity_seconds = parse_granularity(granularity)
+    
+    click.echo(f"🚀 Training {model_type} model for {symbol} ({granularity})")
+    click.echo(f"   Task: {task_type}")
+    click.echo(f"   Lookback period: {lookback_days} days")
+    
+    # Get database manager for this granularity
+    db_mgr = DatabaseManager(granularity=granularity_seconds)
+    
+    # Load historical data
+    click.echo("\n📊 Loading historical data...")
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=lookback_days)
+    
+    data_points = db_mgr.read_data(symbol, start_date, end_date)
+    
+    if not data_points:
+        click.echo(f"❌ No data found for {symbol}. Please retrieve data first.")
+        return
+    
+    click.echo(f"   Loaded {len(data_points)} data points")
+    
+    # Convert to DataFrame
+    import pandas as pd
+    df = pd.DataFrame([dp.to_dict() for dp in data_points])
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = df.sort_values('timestamp').reset_index(drop=True)
+    
+    # Engineer features
+    click.echo("\n🔧 Engineering features...")
+    engineer = FeatureEngineer()
+    df_features = engineer.build_features(df)
+    
+    # Drop rows with NaN (from indicators requiring history)
+    df_features = df_features.dropna()
+    click.echo(f"   Generated {len(df_features.columns)} features")
+    click.echo(f"   Valid samples after feature generation: {len(df_features)}")
+    
+    # Create target variable
+    click.echo("\n🎯 Creating target variable...")
+    if task_type == 'classification':
+        # Binary classification: 1 if price goes up, 0 otherwise
+        df_features[target_col] = (df_features['close_price'].shift(-1) > df_features['close_price']).astype(int)
+    else:
+        # Regression: predict next close price
+        df_features[target_col] = df_features['close_price'].shift(-1)
+    
+    # Drop last row (no target)
+    df_features = df_features[:-1]
+    
+    click.echo(f"   Target distribution: {df_features[target_col].value_counts().to_dict()}")
+    
+    # Configure training
+    tuning_method = None if tuning == 'none' else tuning
+    
+    training_config = TrainingConfig(
+        model_type=model_type,
+        task_type=task_type,
+        target_col=target_col,
+        tuning_method=tuning_method,
+        cv_folds=cv_folds,
+        verbose=True,
+    )
+    
+    preprocessor_config = PreprocessorConfig()
+    
+    # Initialize trainer and registry
+    trainer = ModelTrainer(training_config, preprocessor_config)
+    registry = ModelRegistry(registry_path)
+    
+    # Progress callback
+    def show_progress(msg: str):
+        click.echo(f"   {msg}")
+    
+    # Train model
+    click.echo("\n🏋️  Training model...")
+    try:
+        result = trainer.train(
+            df=df_features,
+            symbol=symbol,
+            granularity=granularity,
+            registry=registry,
+            model_version=model_version,
+            progress_callback=show_progress,
+        )
+        
+        # Display results
+        click.echo("\n✅ Training completed successfully!")
+        click.echo(f"\n📈 Model Performance:")
+        for metric, value in result.metrics.items():
+            click.echo(f"   {metric}: {value:.4f}")
+        
+        click.echo(f"\n⏱️  Training time: {result.training_time:.2f}s")
+        
+        # Display top features
+        if result.feature_importance:
+            click.echo("\n🔝 Top 10 Important Features:")
+            sorted_features = sorted(
+                result.feature_importance.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:10]
+            for feat, importance in sorted_features:
+                click.echo(f"   {feat}: {importance:.4f}")
+        
+        click.echo(f"\n💾 Model saved to registry")
+        
+    except Exception as e:
+        click.echo(f"\n❌ Training failed: {e}")
+        logger.error("Model training failed", error=str(e), exc_info=True)
+
+
+@cli.command()
+@click.option('--symbol', '-s', help='Filter by symbol')
+@click.option('--model-type', '-m', help='Filter by model type')
+@click.option('--registry-path', default='./models', help='Path to model registry')
+def ml_models(symbol: Optional[str], model_type: Optional[str], registry_path: str):
+    """List trained ML models."""
+    from src.ml.model_registry import ModelRegistry
+    
+    registry = ModelRegistry(registry_path)
+    
+    # List models
+    models = registry.list_models(symbol=symbol, model_type=model_type)
+    
+    if not models:
+        click.echo("No models found in registry.")
+        return
+    
+    click.echo(f"\n📚 Found {len(models)} model(s):\n")
+    
+    for metadata in models:
+        click.echo(f"Model ID: {metadata.model_id}")
+        click.echo(f"  Type: {metadata.model_type}")
+        click.echo(f"  Symbol: {metadata.symbol}")
+        click.echo(f"  Granularity: {metadata.granularity}")
+        click.echo(f"  Version: {metadata.version}")
+        click.echo(f"  Created: {metadata.created_at}")
+        click.echo(f"  Metrics: {metadata.metrics}")
+        click.echo()
+
+
+@cli.command()
+@click.argument('model_id')
+@click.option('--registry-path', default='./models', help='Path to model registry')
+def ml_info(model_id: str, registry_path: str):
+    """Show detailed information about a trained model."""
+    from src.ml.model_registry import ModelRegistry
+    
+    registry = ModelRegistry(registry_path)
+    
+    try:
+        metadata = registry.get_metadata(model_id)
+        
+        click.echo(f"\n📊 Model Information:\n")
+        click.echo(f"Model ID: {metadata.model_id}")
+        click.echo(f"Type: {metadata.model_type}")
+        click.echo(f"Symbol: {metadata.symbol}")
+        click.echo(f"Granularity: {metadata.granularity}")
+        click.echo(f"Version: {metadata.version}")
+        click.echo(f"Created: {metadata.created_at}")
+        
+        click.echo(f"\n📈 Metrics:")
+        for metric, value in metadata.metrics.items():
+            click.echo(f"  {metric}: {value:.4f}")
+        
+        click.echo(f"\n⚙️  Hyperparameters:")
+        for param, value in metadata.hyperparameters.items():
+            click.echo(f"  {param}: {value}")
+        
+        click.echo(f"\n🔧 Features ({len(metadata.feature_names)}):")
+        for feat in metadata.feature_names[:20]:  # Show first 20
+            click.echo(f"  - {feat}")
+        if len(metadata.feature_names) > 20:
+            click.echo(f"  ... and {len(metadata.feature_names) - 20} more")
+        
+    except FileNotFoundError:
+        click.echo(f"❌ Model '{model_id}' not found in registry.")
 
 
 if __name__ == '__main__':
