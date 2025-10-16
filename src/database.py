@@ -68,6 +68,10 @@ class DatabaseManager:
                     index_sqls = DatabaseSchema.get_create_indexes_sql(full_table_name)
                     for index_sql in index_sqls:
                         cursor.execute(index_sql)
+
+                    # Ensure ML tables exist
+                    for sql in DatabaseSchema.get_create_ml_tables_sql(config.db_schema):
+                        cursor.execute(sql)
                     
                     conn.commit()
                     logger.info("Database schema verified and created if needed", 

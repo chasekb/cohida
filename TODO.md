@@ -55,22 +55,22 @@ src/ml/utils/
 - `mse.ml_training_runs`: Training session tracking
 
 ### Phase 1: Foundation (Core Infrastructure)
-- [ ] Create src/ml/ module structure with __init__.py
-- [ ] Implement TechnicalIndicators class
+- [x] Create src/ml/ module structure with __init__.py
+- [x] Implement TechnicalIndicators class
   - SMA, EMA, RSI, MACD, Bollinger Bands
   - Volume indicators (OBV, VWAP)
   - Volatility indicators (ATR, True Range)
-- [ ] Implement FeatureEngineer class
+- [x] Implement FeatureEngineer class
   - Technical indicator computation
   - Lag features, rolling statistics
   - Temporal features (day, hour, month)
-- [ ] Extend DatabaseSchema for ML tables
+- [x] Extend DatabaseSchema for ML tables
   - ml_features table schema
   - ml_predictions table schema
   - ml_models table schema
   - ml_training_runs table schema
-- [ ] Create database migrations for new tables
-- [ ] Update requirements.txt with ML dependencies
+- [x] Create database migrations for new tables
+- [x] Update requirements.txt with ML dependencies
   - scikit-learn, xgboost, lightgbm
   - ta (technical analysis library)
   - pandas, numpy upgrades

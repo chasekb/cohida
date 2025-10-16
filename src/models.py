@@ -248,3 +248,56 @@ class DatabaseSchema:
         AND timestamp BETWEEN %(start_date)s AND %(end_date)s
         ORDER BY timestamp;
         """
+
+    # ---- ML Tables ----
+    @staticmethod
+    def get_create_ml_tables_sql(schema: str) -> list:
+        """Return SQL statements to create ML-related tables."""
+        return [
+            f"""
+            CREATE TABLE IF NOT EXISTS {schema}.ml_features (
+                id SERIAL PRIMARY KEY,
+                symbol VARCHAR(20) NOT NULL,
+                timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+                granularity VARCHAR(10) NOT NULL,
+                features JSONB NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(symbol, timestamp, granularity)
+            );
+            """,
+            f"""
+            CREATE TABLE IF NOT EXISTS {schema}.ml_predictions (
+                id SERIAL PRIMARY KEY,
+                symbol VARCHAR(20) NOT NULL,
+                timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+                granularity VARCHAR(10) NOT NULL,
+                model_id VARCHAR(100) NOT NULL,
+                prediction JSONB NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(symbol, timestamp, granularity, model_id)
+            );
+            """,
+            f"""
+            CREATE TABLE IF NOT EXISTS {schema}.ml_models (
+                id SERIAL PRIMARY KEY,
+                model_id VARCHAR(100) UNIQUE NOT NULL,
+                model_type VARCHAR(50) NOT NULL,
+                version VARCHAR(20) NOT NULL,
+                metadata JSONB,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            f"""
+            CREATE TABLE IF NOT EXISTS {schema}.ml_training_runs (
+                id SERIAL PRIMARY KEY,
+                model_id VARCHAR(100) NOT NULL,
+                started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                finished_at TIMESTAMP WITH TIME ZONE,
+                params JSONB,
+                metrics JSONB
+            );
+            """,
+            f"CREATE INDEX IF NOT EXISTS idx_ml_features_symbol_ts ON {schema}.ml_features(symbol, timestamp);",
+            f"CREATE INDEX IF NOT EXISTS idx_ml_predictions_symbol_ts ON {schema}.ml_predictions(symbol, timestamp);",
+            f"CREATE INDEX IF NOT EXISTS idx_ml_predictions_model ON {schema}.ml_predictions(model_id);",
+        ]
