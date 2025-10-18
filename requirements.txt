@@ -1,5 +1,6 @@
 coinbase-advanced-py>=1.0.0
-psycopg2-binary>=2.9.0
+psycopg[binary]>=3.1.0
+psycopg_pool>=3.1.0
 python-dotenv>=1.0.0
 pytest>=7.0.0
 pytest-asyncio>=0.21.0

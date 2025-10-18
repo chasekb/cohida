@@ -3,9 +3,9 @@ PostgreSQL database operations for cryptocurrency historical data.
 Handles connection management, schema creation, and data persistence with write-as-read capability.
 """
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from psycopg2.pool import SimpleConnectionPool
+import psycopg
+from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import structlog
@@ -23,7 +23,7 @@ class DatabaseManager:
     def __init__(self, granularity: int = None):
         """Initialize database manager with connection pool."""
         self.granularity = granularity
-        self.connection_pool: Optional[SimpleConnectionPool] = None
+        self.connection_pool: Optional[ConnectionPool] = None
         self._initialize_connection_pool()
         self._ensure_schema_exists()
     
@@ -32,14 +32,11 @@ class DatabaseManager:
         try:
             db_name = config.get_database_name(self.granularity)
             
-            self.connection_pool = SimpleConnectionPool(
-                minconn=1,
-                maxconn=10,
-                host=config.db_host,
-                port=config.db_port,
-                database=db_name,
-                user=config.db_user,
-                password=config.db_password
+            conninfo = f"host={config.db_host} port={config.db_port} dbname={db_name} user={config.db_user} password={config.db_password}"
+            self.connection_pool = ConnectionPool(
+                conninfo=conninfo,
+                min_size=1,
+                max_size=10
             )
             logger.info("Database connection pool initialized successfully", 
                        database=db_name, granularity=self.granularity)
@@ -158,7 +155,7 @@ class DatabaseManager:
         
         try:
             with self.get_connection() as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                with conn.cursor(row_factory=dict_row) as cursor:
                     table_name = config.get_table_name(self.granularity)
                     full_table_name = f"{config.db_schema}.{table_name}"
                     select_sql = DatabaseSchema.get_select_data_sql(full_table_name)
@@ -259,7 +256,7 @@ class DatabaseManager:
     def close_connections(self) -> None:
         """Close all database connections."""
         if self.connection_pool:
-            self.connection_pool.closeall()
+            self.connection_pool.close()
             logger.info("All database connections closed")
 
 
