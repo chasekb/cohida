@@ -33,23 +33,24 @@ class Config:
     
     def _setup_database_config(self) -> None:
         """Configure database connection settings."""
-        self.db_host = os.getenv("POSTGRES_HOST", "postgres")
-        self.db_port = int(os.getenv("POSTGRES_PORT", "5432"))
-        self.base_db_name = os.getenv("POSTGRES_DB", "_00003300042002")
-        
+        self.db_host = os.getenv("POSTGRES_HOST")
+        self.db_port = int(os.getenv("POSTGRES_PORT")) if os.getenv("POSTGRES_PORT") else None
+        self.base_db_name = os.getenv("POSTGRES_DB")
+
         # Read credentials from files
-        self.db_user = self._read_credential_file("POSTGRES_USER_FILE", "db/postgres-u.txt")
-        self.db_password = self._read_credential_file("POSTGRES_PASSWORD_FILE", "db/postgres-p.txt")
-        
+        self.db_user = self._read_credential_file("POSTGRES_USER_FILE")
+        self.db_password = self._read_credential_file("POSTGRES_PASSWORD_FILE")
+
         # Database schema configuration
-        self.db_schema = os.getenv("DB_SCHEMA", "mse")
-        self.db_table = os.getenv("DB_TABLE", "crypto")
-        
+        self.db_schema = os.getenv("DB_SCHEMA")
+        self.db_table = os.getenv("DB_TABLE")
+
         # Output configuration
-        self.output_dir = os.getenv("OUTPUT_DIR", "outputs")
-        
+        self.output_dir = os.getenv("OUTPUT_DIR")
+
         # Granularity-based table naming (database separation disabled)
-        self.granularity_table_suffix = os.getenv("GRANULARITY_TABLE_SUFFIX", "true").lower() == "true"
+        granularity_suffix_env = os.getenv("GRANULARITY_TABLE_SUFFIX")
+        self.granularity_table_suffix = granularity_suffix_env.lower() == "true" if granularity_suffix_env else False
         
         logger.info("Database configuration initialized", 
                    host=self.db_host, port=self.db_port, base_database=self.base_db_name)
@@ -88,10 +89,14 @@ class Config:
             cache_logger_on_first_use=True,
         )
     
-    def _read_credential_file(self, env_var: str, default_path: str) -> Optional[str]:
+    def _read_credential_file(self, env_var: str, default_path: Optional[str] = None) -> Optional[str]:
         """Read credential from file specified by environment variable or default path."""
         file_path = os.getenv(env_var, default_path)
-        
+
+        if not file_path:
+            logger.error(f"Environment variable {env_var} not set and no default path provided")
+            return None
+
         try:
             with open(file_path, 'r') as f:
                 credential = f.read().strip()
@@ -107,7 +112,7 @@ class Config:
     @property
     def database_url(self) -> str:
         """Generate database connection URL."""
-        return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port or 5432}/{self.base_db_name}"
     
     @property
     def api_credentials_valid(self) -> bool:
@@ -117,7 +122,7 @@ class Config:
     @property
     def database_credentials_valid(self) -> bool:
         """Check if database credentials are properly configured."""
-        return all([self.db_user, self.db_password])
+        return all([self.db_host, self.db_port, self.base_db_name, self.db_user, self.db_password])
     
     def get_database_name(self, granularity: int = None) -> str:
         """Get database name (always returns base database name)."""

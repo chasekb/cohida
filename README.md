@@ -190,7 +190,17 @@ All major cryptocurrencies available on Coinbase Advanced API, including:
 | `COINBASE_API_SECRET` | Coinbase Advanced API secret | Required |
 | `COINBASE_API_PASSPHRASE` | Coinbase Advanced API passphrase | Required |
 | `COINBASE_SANDBOX` | Enable sandbox mode | `false` |
+| `POSTGRES_HOST` | PostgreSQL database host | Required |
+| `POSTGRES_PORT` | PostgreSQL database port | Required |
+| `POSTGRES_DB` | PostgreSQL database name | Required |
+| `POSTGRES_USER_FILE` | Path to file containing database username | Required |
+| `POSTGRES_PASSWORD_FILE` | Path to file containing database password | Required |
+| `DB_SCHEMA` | Database schema name | Required |
+| `DB_TABLE` | Base table name for data storage | Required |
+| `GRANULARITY_TABLE_SUFFIX` | Enable table suffixes for different granularities | Required |
+| `OUTPUT_DIR` | Directory for output files | Required |
 | `LOG_LEVEL` | Logging level | `INFO` |
+| `LOG_FORMAT` | Log output format (json/console) | `json` |
 
 ### Data Granularity Options
 

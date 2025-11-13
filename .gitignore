@@ -116,6 +116,7 @@ Thumbs.db
 
 # Project specific
 outputs/
+docs/spec.md
 
 # Database credentials (sensitive)
 db/
