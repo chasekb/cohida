@@ -1,0 +1,17 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+    "name": "cpp-cohida",
+    "version": "1.0.0",
+    "description": "Coinbase Historical Data Retrieval and ML Pipeline",
+    "dependencies": [
+        "nlohmann-json",
+        "curl",
+        "libpqxx",
+        "cli11",
+        "spdlog",
+        "dotenv-cpp",
+        "date",
+        "eigen3",
+        "ta-lib"
+    ]
+}

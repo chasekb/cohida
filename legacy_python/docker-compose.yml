@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  coinbase-app:
+    build: .
+    container_name: coinbase-data-retriever
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER_FILE=/app/db/postgres-u.txt
+      - POSTGRES_PASSWORD_FILE=/app/db/postgres-p.txt
+    volumes:
+      - ./db:/app/db:ro
+      - ./outputs:/app/outputs
+      - ./.env:/app/.env:ro
+      - ./src:/app/src
+    networks:
+      - db_prdnet
+
+networks:
+  db_prdnet:
+    external: true

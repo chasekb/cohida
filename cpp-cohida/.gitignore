@@ -1,0 +1,112 @@
+# C++ objects and libs
+*.slo
+*.lo
+*.o
+*.a
+*.la
+*.lai
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Qt-es
+object_script.*.Release
+object_script.*.Debug
+*_plugin_import.cpp
+/.qmake.cache
+/.qmake.stash
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.jsc
+Makefile*
+*-build/
+
+# Qt test coverage
+*.gcda
+*.gcno
+
+# QtCreator
+*.autosave
+*.user
+
+# QtCtreator Qml
+*.qmlproject.user
+*.qmlproject.user.*
+
+# Build directories
+build/
+build-*/
+bin/
+bin-*/
+lib/
+lib-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Vcpkg
+vcpkg_installed/
+.vcpkg-root
+
+# Conan
+build/
+conan.lock
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Output directories
+outputs/
+results/
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Core dumps
+core
+*.core
