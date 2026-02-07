@@ -9,9 +9,8 @@
         "libpqxx",
         "cli11",
         "spdlog",
-        "dotenv-cpp",
         "date",
         "eigen3",
-        "ta-lib"
+        "boost-multiprecision"
     ]
 }

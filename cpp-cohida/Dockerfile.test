@@ -1,0 +1,51 @@
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    zip \
+    unzip \
+    pkg-config \
+    bison \
+    flex \
+    autoconf \
+    automake \
+    libtool \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install vcpkg
+RUN git clone https://github.com/microsoft/vcpkg.git /app/vcpkg
+WORKDIR /app/vcpkg
+RUN ./bootstrap-vcpkg.sh && chmod +x vcpkg
+
+# Copy project files
+WORKDIR /app
+COPY . .
+
+# Create build directory
+RUN mkdir -p build
+
+# Install dependencies using vcpkg
+RUN chmod +x ./vcpkg/vcpkg && ./vcpkg/vcpkg install
+
+# Build the project in test mode
+WORKDIR /app/build
+RUN cmake .. -DCMAKE_TOOLCHAIN_FILE=/app/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Debug
+RUN make -j$(nproc)
+
+# Run unit tests
+RUN ./bin/cohida-unit-tests
+
+# Run integration tests (if available)
+RUN if [ -f "./bin/cohida-integration-tests" ]; then ./bin/cohida-integration-tests; fi
+
+# Run end-to-end tests (if available)
+RUN if [ -f "./bin/cohida-e2e-tests" ]; then ./bin/cohida-e2e-tests; fi
+
+# Default command
+CMD ["./bin/cohida-unit-tests"]

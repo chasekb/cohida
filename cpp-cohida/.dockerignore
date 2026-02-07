@@ -1,0 +1,23 @@
+# Dependencies
+vcpkg/
+build/
+build*/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test outputs
+test_outputs/
+
+# Environment
+.env
+.env.local

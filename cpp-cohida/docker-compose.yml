@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  cohida-app:
+    build: .
+    container_name: cpp-cohida
+    env_file:
+      - .env
+    volumes:
+      - ./outputs:/app/outputs
+      - ./.env:/app/.env:ro
+    networks:
+      - db_prdnet
+
+networks:
+  db_prdnet:
+    external: true

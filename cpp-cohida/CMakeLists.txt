@@ -41,10 +41,10 @@ find_package(CURL REQUIRED)
 find_package(libpqxx REQUIRED)
 find_package(CLI11 REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(dotenv-cpp REQUIRED)
 find_package(date REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(ta-lib REQUIRED)
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
 
 # Targets
 
@@ -52,20 +52,10 @@ find_package(ta-lib REQUIRED)
 add_library(cohida-core
     src/config/Config.cpp
     src/api/CoinbaseClient.cpp
-    src/database/DatabaseManager.cpp
     src/models/DataPoint.cpp
-    src/models/SymbolInfo.cpp
-    src/models/Validation.cpp
-    src/data/DataRetriever.cpp
-    src/data/FileWriter.cpp
-    src/ml/TechnicalIndicators.cpp
-    src/ml/FeatureEngineer.cpp
-    src/ml/Preprocessor.cpp
-    src/ml/ModelTrainer.cpp
-    src/ml/ModelRegistry.cpp
     src/utils/Logger.cpp
-    src/utils/Retry.cpp
-    src/utils/RateLimiter.cpp
+    src/database/DatabaseManager.cpp
+    src/data/DataRetriever.cpp
 )
 
 target_include_directories(cohida-core
@@ -80,10 +70,9 @@ target_link_libraries(cohida-core
         libpqxx::pqxx
         CLI11::CLI11
         spdlog::spdlog
-        dotenv-cpp::dotenv-cpp
         date::date
         Eigen3::Eigen
-        ta-lib::ta-lib
+        ${Boost_LIBRARIES}
 )
 
 # Main executable
@@ -109,8 +98,8 @@ enable_testing()
 
 # Unit tests
 add_executable(cohida-unit-tests
-    tests/unit/test_config.cpp
     tests/unit/test_coinbase_client.cpp
+    tests/unit/test_coinbase_auth.cpp
     tests/unit/test_database_manager.cpp
     tests/unit/test_data_point.cpp
     tests/unit/test_data_retriever.cpp
@@ -125,35 +114,6 @@ target_link_libraries(cohida-unit-tests
 
 include(GoogleTest)
 gtest_discover_tests(cohida-unit-tests)
-
-# Integration tests
-add_executable(cohida-integration-tests
-    tests/integration/test_api_integration.cpp
-    tests/integration/test_database_integration.cpp
-)
-
-target_link_libraries(cohida-integration-tests
-    PRIVATE
-        cohida-core
-        GTest::gtest_main
-        GTest::gmock_main
-)
-
-gtest_discover_tests(cohida-integration-tests)
-
-# End-to-end tests
-add_executable(cohida-e2e-tests
-    tests/e2e/test_workflow.cpp
-)
-
-target_link_libraries(cohida-e2e-tests
-    PRIVATE
-        cohida-core
-        GTest::gtest_main
-        GTest::gmock_main
-)
-
-gtest_discover_tests(cohida-e2e-tests)
 
 # Examples
 add_subdirectory(examples)

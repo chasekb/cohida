@@ -31,6 +31,40 @@ public:
         return config_;
     }
     
+    // API credentials
+    std::string api_key() const {
+        return get_string("COINBASE_API_KEY", "");
+    }
+    
+    std::string api_secret() const {
+        return get_string("COINBASE_API_SECRET", "");
+    }
+    
+    std::string api_passphrase() const {
+        return get_string("COINBASE_API_PASSPHRASE", "");
+    }
+    
+    bool api_credentials_valid() const {
+        return !api_key().empty() && !api_secret().empty();
+    }
+    
+    // API settings
+    bool sandbox_mode() const {
+        return get_bool("COINBASE_SANDBOX_MODE", false);
+    }
+    
+    int api_timeout() const {
+        return get_int("COINBASE_API_TIMEOUT", 30);
+    }
+    
+    int api_max_retries() const {
+        return get_int("COINBASE_API_MAX_RETRIES", 3);
+    }
+    
+    int api_retry_delay() const {
+        return get_int("COINBASE_API_RETRY_DELAY", 1000);
+    }
+    
 private:
     Config() = default;
     Config(const Config&) = delete;

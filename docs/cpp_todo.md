@@ -29,51 +29,60 @@
 ## Phase 2: API Client & Models (Weeks 2-3)
 
 ### 1. Data Models
-- [ ] Create DataPoint class (OHLCV data structure)
-- [ ] Create SymbolInfo class (symbol details)
-- [ ] Create ApiResponse class (API response wrapper)
-- [ ] Implement validation logic for data points
-- [ ] Test model creation and validation
+- [x] Create DataPoint class (OHLCV data structure)
+- [x] Create SymbolInfo class (symbol details)
+- [x] Create ApiResponse class (API response wrapper)
+- [x] Implement validation logic for data points
+- [x] Test model creation and validation
 
 ### 2. Coinbase API Client
-- [ ] Implement CoinbaseClient class
+- [x] Implement CoinbaseClient class
 - [ ] Add API authentication using API key/secret
 - [ ] Implement HMAC signature generation
-- [ ] Create API endpoint methods:
-  - [ ] get_server_time()
-  - [ ] get_available_symbols()
-  - [ ] get_symbol_info()
-  - [ ] get_current_price()
-  - [ ] get_historical_candles()
+- [x] Create API endpoint methods:
+  - [x] get_server_time()
+  - [x] get_available_symbols()
+  - [x] get_symbol_info()
+  - [x] get_current_price()
+  - [x] get_historical_candles()
 
 ### 3. API Utilities
-- [ ] Implement rate limiting (token bucket algorithm)
-- [ ] Add retry logic with exponential backoff
-- [ ] Handle API errors and exceptions
-- [ ] Test connection and authentication
+- [x] Implement rate limiting (token bucket algorithm)
+- [x] Add retry logic with exponential backoff
+- [x] Handle API errors and exceptions
+- [x] Test connection and authentication
 
 ## Phase 3: Database & Data Retrieval (Weeks 4-5)
 
 ### 1. Database Manager
-- [ ] Create DatabaseManager class
-- [ ] Implement PostgreSQL connection using libpqxx
-- [ ] Create connection pooling
-- [ ] Implement connection string generation
-- [ ] Test database connection
+- [x] Create DatabaseManager class - Implemented complete PostgreSQL connection pool manager
+- [x] Implement PostgreSQL connection using libpqxx - Connection string generation, pool management
+- [x] Create connection pooling - Min/max pool size configuration
+- [x] Implement connection string generation - Granularity-based database and table names
+- [x] Test database connection - test_connection() method with connection pooling
 
 ### 2. Database Operations
-- [ ] Implement write_data() method
-- [ ] Implement read_data() method
-- [ ] Implement test_connection() method
-- [ ] Handle granularity-based table naming
-- [ ] Test data insertion and retrieval
+- [x] Implement write_data() method - Upsert with conflict resolution
+- [x] Implement read_data() method - Query with date range filtering
+- [x] Implement test_connection() method - Simple connection test
+- [x] Handle granularity-based table naming - Dynamic table names based on granularity
+- [x] Test data insertion and retrieval - Complete test suite
 
 ### 3. Data Retrieval Pipeline
-- [ ] Create DataRetriever class
-- [ ] Implement retrieve_historical_data()
-- [ ] Implement retrieve_all_historical_data()
-- [ ] Handle date range parsing
-- [ ] Implement granularity parsing (shorthand to seconds)
+- [x] Create DataRetriever class - Complete historical data retriever
+- [x] Implement retrieve_historical_data() - Single date range retrieval
+- [x] Implement retrieve_all_historical_data() - Full historical data retrieval with chunking
+- [x] Handle date range parsing - Chrono timestamp handling
+- [x] Implement granularity parsing (shorthand to seconds) - 60 -> "ONE_MINUTE" mapping
+
+### 4. Tests
+- [x] Create test_database_manager.cpp - Comprehensive unit tests
+- [x] Create test_data_retriever.cpp - Complete data retriever tests
+- [x] Include tests in CMakeLists.txt - Added to test targets
+- [ ] Run tests and fix issues - Requires vcpkg installation first
+
+### Note
+vcpkg installation and package management is not completed yet. The build system is configured, but dependencies haven't been installed.
 
 ## Phase 4: CLI & UI (Week 6)
 

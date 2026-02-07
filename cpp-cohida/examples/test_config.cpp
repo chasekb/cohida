@@ -3,6 +3,9 @@
 #include "utils/Logger.h"
 
 int main(int argc, char** argv) {
+    (void)argc;
+    (void)argv;
+    
     try {
         // Initialize logger
         utils::Logger::initialize("debug", "logs/test_config.log");

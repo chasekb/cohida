@@ -1,0 +1,201 @@
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/meta/std_fs.hpp:22,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/conversions/from_json.hpp:27,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/adl_serializer.hpp:14,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/json.hpp:34,
+                 from /app/include/api/CoinbaseClient.h:10,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/iomanip:109:5: note: candidate: 'template<class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::_Setiosflags)'
+  109 |     operator<<(basic_ostream<_CharT, _Traits>& __os, _Setiosflags __f)
+      |     ^~~~~~~~
+/usr/include/c++/11/iomanip:109:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /usr/include/c++/11/bits/fs_path.h:39,
+                 from /usr/include/c++/11/filesystem:45,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/meta/std_fs.hpp:22,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/conversions/from_json.hpp:27,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/adl_serializer.hpp:14,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/json.hpp:34,
+                 from /app/include/api/CoinbaseClient.h:10,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/iomanip:143:5: note: candidate: 'template<class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::_Setbase)'
+  143 |     operator<<(basic_ostream<_CharT, _Traits>& __os, _Setbase __f)
+      |     ^~~~~~~~
+/usr/include/c++/11/iomanip:143:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /usr/include/c++/11/bits/fs_path.h:39,
+                 from /usr/include/c++/11/filesystem:45,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/meta/std_fs.hpp:22,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/conversions/from_json.hpp:27,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/adl_serializer.hpp:14,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/json.hpp:34,
+                 from /app/include/api/CoinbaseClient.h:10,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/iomanip:178:5: note: candidate: 'template<class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::_Setfill<_CharT>)
+'
+  178 |     operator<<(basic_ostream<_CharT, _Traits>& __os, _Setfill<_CharT> __f)
+      |     ^~~~~~~~
+/usr/include/c++/11/iomanip:178:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /usr/include/c++/11/bits/fs_path.h:39,
+                 from /usr/include/c++/11/filesystem:45,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/meta/std_fs.hpp:22,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/conversions/from_json.hpp:27,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/adl_serializer.hpp:14,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/json.hpp:34,
+                 from /app/include/api/CoinbaseClient.h:10,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/iomanip:208:5: note: candidate: 'template<class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::_Setprecision)'
+  208 |     operator<<(basic_ostream<_CharT, _Traits>& __os, _Setprecision __f)
+      |     ^~~~~~~~
+/usr/include/c++/11/iomanip:208:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /usr/include/c++/11/bits/fs_path.h:39,
+                 from /usr/include/c++/11/filesystem:45,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/meta/std_fs.hpp:22,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/conversions/from_json.hpp:27,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/adl_serializer.hpp:14,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/json.hpp:34,
+                 from /app/include/api/CoinbaseClient.h:10,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/iomanip:238:5: note: candidate: 'template<class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::_Setw)'
+  238 |     operator<<(basic_ostream<_CharT, _Traits>& __os, _Setw __f)
+      |     ^~~~~~~~
+/usr/include/c++/11/iomanip:238:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /usr/include/c++/11/bits/fs_path.h:39,
+                 from /usr/include/c++/11/filesystem:45,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/meta/std_fs.hpp:22,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/conversions/from_json.hpp:27,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/adl_serializer.hpp:14,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/json.hpp:34,
+                 from /app/include/api/CoinbaseClient.h:10,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/iomanip:311:5: note: candidate: 'template<class _CharT, class _Traits, class _MoneyT> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::_P
+ut_money<_MoneyT>)'
+  311 |     operator<<(basic_ostream<_CharT, _Traits>& __os, _Put_money<_MoneyT> __f)
+      |     ^~~~~~~~
+/usr/include/c++/11/iomanip:311:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /usr/include/c++/11/bits/fs_path.h:39,
+                 from /usr/include/c++/11/filesystem:45,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/meta/std_fs.hpp:22,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/detail/conversions/from_json.hpp:27,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/adl_serializer.hpp:14,
+                 from /app/build/vcpkg_installed/arm64-linux/include/nlohmann/json.hpp:34,
+                 from /app/include/api/CoinbaseClient.h:10,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/iomanip:363:5: note: candidate: 'template<class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::_Put_time<_CharT>
+)'
+  363 |     operator<<(basic_ostream<_CharT, _Traits>& __os, _Put_time<_CharT> __f)
+      |     ^~~~~~~~
+/usr/include/c++/11/iomanip:363:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /app/build/vcpkg_installed/arm64-linux/include/spdlog/details/periodic_worker.h:17,
+                 from /app/build/vcpkg_installed/arm64-linux/include/spdlog/details/registry.h:12,
+                 from /app/build/vcpkg_installed/arm64-linux/include/spdlog/spdlog.h:13,
+                 from /app/include/utils/Logger.h:3,
+                 from /app/include/api/CoinbaseClient.h:12,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/thread:92:5: note: candidate: 'template<class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, std::thread::id)'
+   92 |     operator<<(basic_ostream<_CharT, _Traits>& __out, thread::id __id)
+      |     ^~~~~~~~
+/usr/include/c++/11/thread:92:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+In file included from /app/build/vcpkg_installed/arm64-linux/include/boost/math/tools/complex.hpp:33,
+                 from /app/build/vcpkg_installed/arm64-linux/include/boost/multiprecision/detail/number_base.hpp:34,
+                 from /app/build/vcpkg_installed/arm64-linux/include/boost/multiprecision/traits/is_variable_precision.hpp:9,
+                 from /app/build/vcpkg_installed/arm64-linux/include/boost/multiprecision/detail/precision.hpp:9,
+                 from /app/build/vcpkg_installed/arm64-linux/include/boost/multiprecision/number.hpp:11,
+                 from /app/build/vcpkg_installed/arm64-linux/include/boost/multiprecision/cpp_dec_float.hpp:17,
+                 from /app/include/models/DataPoint.h:10,
+                 from /app/include/api/CoinbaseClient.h:13,
+                 from /app/src/main.cpp:2:
+/usr/include/c++/11/complex:555:5: note: candidate: 'template<class _Tp, class _CharT, class _Traits> std::basic_ostream<_CharT, _Traits>& std::operator<<(std::basic_ostream<_CharT, _Traits>&, const std::
+complex<_Tp>&)'
+  555 |     operator<<(basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
+      |     ^~~~~~~~
+/usr/include/c++/11/complex:555:5: note:   template argument deduction/substitution failed:
+/app/src/main.cpp:72:63: note:   mismatched types 'std::basic_ostream<_CharT, _Traits>' and 'const char [37]'
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |                                                               ^~~~~~
+/app/examples/test_coinbase_client.cpp:69:62: error: 'using Decimal = using cpp_dec_float_100 = class boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >' {aka 'class boost
+::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >'} has no member named 'to_string'
+   69 |             std::cout << "Price range: $" << first.low_price.to_string() << " - $" << first.high_price.to_string() << std::endl;
+      |                                                              ^~~~~~~~~
+/app/examples/test_coinbase_client.cpp:69:104: error: 'using Decimal = using cpp_dec_float_100 = class boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >' {aka 'class boos
+t::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >'} has no member named 'to_string'
+   69 |             std::cout << "Price range: $" << first.low_price.to_string() << " - $" << first.high_price.to_string() << std::endl;
+      |                                                                                                        ^~~~~~~~~
+/app/src/main.cpp:72:9: error: 'LOG_WARNING' was not declared in this scope; did you mean 'LOG_WARN'?
+   72 |         LOG_WARNING("No historical candles available for " << symbol);
+      |         ^~~~~~~~~~~
+      |         LOG_WARN
+In file included from /app/include/api/CoinbaseClient.h:12,
+                 from /app/src/main.cpp:2:
+/app/src/main.cpp:74:41: error: invalid operands of types 'const char [21]' and 'std::vector<models::CryptoPriceData>::size_type' {aka 'long unsigned int'} to binary 'operator<<'
+   74 |         LOG_INFO("Historical candles: " << candles.size() << " (1-hour intervals)");
+      |                  ~~~~~~~~~~~~~~~~~~~~~~ ^~ ~~~~~~~~~~~~~~
+      |                  |                                     |
+      |                  const char [21]                       std::vector<models::CryptoPriceData>::size_type {aka long unsigned int}
+/app/include/utils/Logger.h:30:57: note: in definition of macro 'LOG_INFO'
+   30 | #define LOG_INFO(...) utils::Logger::get_logger()->info(__VA_ARGS__)
+      |                                                         ^~~~~~~~~~~
+/app/examples/test_coinbase_auth.cpp: In function 'int main()':
+/app/examples/test_coinbase_auth.cpp:29:5: error: 'logger' has not been declared
+   29 |     logger::Logger::init();
+      |     ^~~~~~
+/app/examples/test_coinbase_auth.cpp:83:40: error: '__gnu_cxx::__alloc_traits<std::allocator<models::SymbolInfo>, models::SymbolInfo>::value_type' {aka 'class models::SymbolInfo'} has no member named 'id'
+   83 |             cout << "- " << symbols[i].id << " (" << symbols[i].display_name << ")" << endl;
+      |                                        ^~
+In file included from /app/include/api/CoinbaseClient.h:12,
+                 from /app/examples/test_coinbase_auth.cpp:7:
+/app/examples/test_coinbase_auth.cpp:114:74: error: no matching function for call to 'to_string(boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >&)'
+  114 |             LOG_INFO("Current price of " + symbol + ": " + std::to_string(*price));
+      |                                                            ~~~~~~~~~~~~~~^~~~~~~~
+/app/include/utils/Logger.h:30:57: note: in definition of macro 'LOG_INFO'
+   30 | #define LOG_INFO(...) utils::Logger::get_logger()->info(__VA_ARGS__)
+      |                                                         ^~~~~~~~~~~
+In file included from /usr/include/c++/11/string:55,
+                 from /usr/include/c++/11/bits/locale_classes.h:40,
+                 from /usr/include/c++/11/bits/ios_base.h:41,
+                 from /usr/include/c++/11/ios:42,
+                 from /usr/include/c++/11/ostream:38,
+                 from /usr/include/c++/11/iostream:39,
+                 from /app/examples/test_coinbase_auth.cpp:1:
+/usr/include/c++/11/bits/basic_string.h:6660:3: note: candidate: 'std::string std::__cxx11::to_string(int)'
+ 6660 |   to_string(int __val)
+      |   ^~~~~~~~~
+/usr/include/c++/11/bits/basic_string.h:6660:17: note:   no known conversion for argument 1 from 'boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >' to 'int'
+ 6660 |   to_string(int __val)
+      |             ~~~~^~~~~
+/usr/include/c++/11/bits/basic_string.h:6671:3: note: candidate: 'std::string std::__cxx11::to_string(unsigned int)'
+ 6671 |   to_string(unsigned __val)
+      |   ^~~~~~~~~
+/usr/include/c++/11/bits/basic_string.h:6671:22: note:   no known conversion for argument 1 from 'boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >' to 'unsigned int'
+ 6671 |   to_string(unsigned __val)
+      |             ~~~~~~~~~^~~~~
+/usr/include/c++/11/bits/basic_string.h:6679:3: note: candidate: 'std::string std::__cxx11::to_string(long int)'
+ 6679 |   to_string(long __val)
+      |   ^~~~~~~~~
+/usr/include/c++/11/bits/basic_string.h:6679:18: note:   no known conversion for argument 1 from 'boost::multiprecision::number<boost::multiprecision::backends::cpp_dec_float<100> >' to 'long int'
+ 6679 |   to_string(long __val)
+      |             ~~~~~^~~~~
+/usr/include/c++/11/bits/basic_string.h:6690:3: note: candidate: 'std::string std::__cxx11::to_string(long unsigned int)'
+ 6690 |   to_string(unsigned long __val)
+      |   ^~~~~~~~~
