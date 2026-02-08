@@ -1,6 +1,7 @@
 #include "data/DataRetriever.h"
 #include <iomanip>
 
+namespace {
 std::string format_time_point(const std::chrono::system_clock::time_point& tp) {
     auto t = std::chrono::system_clock::to_time_t(tp);
     std::tm tm;
@@ -9,6 +10,7 @@ std::string format_time_point(const std::chrono::system_clock::time_point& tp) {
     oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
     return oss.str();
 }
+} // anonymous namespace
 
 namespace data {
 

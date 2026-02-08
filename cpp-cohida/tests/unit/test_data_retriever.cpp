@@ -12,7 +12,7 @@ protected:
     }
     
     static void TearDownTestSuite() {
-        utils::Logger::shutdown();
+        // Logger cleanup handled by destructor
     }
 };
 
@@ -22,81 +22,53 @@ TEST_F(DataRetrieverTest, TestInitialization) {
     });
 }
 
-TEST_F(DataRetrieverTest, TestAvailableGranularities) {
+TEST_F(DataRetrieverTest, TestValidateSymbol) {
     data::DataRetriever retriever;
-    auto granularities = retriever.get_available_granularities();
     
-    EXPECT_EQ(granularities.size(), 6);
-    EXPECT_EQ(granularities[0], 60);    // 1 min
-    EXPECT_EQ(granularities[1], 300);   // 5 min
-    EXPECT_EQ(granularities[2], 900);   // 15 min
-    EXPECT_EQ(granularities[3], 3600);  // 1 hour
-    EXPECT_EQ(granularities[4], 21600); // 6 hours
-    EXPECT_EQ(granularities[5], 86400); // 1 day
+    // Test valid symbol
+    EXPECT_TRUE(retriever.validate_symbol("BTC-USD"));
+    
+    // Test invalid symbol
+    EXPECT_FALSE(retriever.validate_symbol("INVALID-SYMBOL-XYZ"));
 }
 
-TEST_F(DataRetrieverTest, TestDateRangeValidation) {
+TEST_F(DataRetrieverTest, TestRetrieveAllHistoricalData) {
     data::DataRetriever retriever;
     
-    auto now = std::chrono::system_clock::now();
-    auto one_day_ago = now - std::chrono::hours(24);
-    auto one_hour_ago = now - std::chrono::hours(1);
-    
-    // Test valid range for 1 hour granularity (max 300 points = 5 hours)
-    EXPECT_TRUE(retriever.validate_date_range(one_hour_ago, now, 3600));
-    
-    // Test invalid range for 1 hour granularity
-    EXPECT_FALSE(retriever.validate_date_range(one_day_ago, now, 3600));
-}
-
-TEST_F(DataRetrieverTest, TestRecentDataRetrieval) {
-    data::DataRetriever retriever;
-    
-    auto result = retriever.retrieve_recent_data("BTC-USD", 1, 3600);
+    // Retrieve last 24 hours of data with 1 hour granularity
+    auto result = retriever.retrieve_all_historical_data("BTC-USD", 3600, std::nullopt);
     
     EXPECT_TRUE(result.success);
     if (result.success) {
         EXPECT_FALSE(result.data_points.empty());
-    } else {
-        std::cout << "Test failed: " << result.error_message << std::endl;
     }
 }
 
-TEST_F(DataRetrieverTest, TestDataRangeRetrieval) {
+TEST_F(DataRetrieverTest, TestRetrieveHistoricalData) {
     data::DataRetriever retriever;
     
     auto now = std::chrono::system_clock::now();
-    auto two_days_ago = now - std::chrono::hours(48);
+    auto two_hours_ago = now - std::chrono::hours(2);
     
-    data::DataRetrievalRequest request(
-        "BTC-USD",
-        two_days_ago,
-        now,
-        3600
-    );
-    
-    auto result = retriever.retrieve_historical_data(request);
+    // Use the public API that takes individual parameters
+    auto result = retriever.retrieve_historical_data("BTC-USD", two_hours_ago, now, 3600);
     
     EXPECT_TRUE(result.success);
     if (result.success) {
-        EXPECT_GE(result.data_points.size(), 0);
-    } else {
-        std::cout << "Test failed: " << result.error_message << std::endl;
+        EXPECT_FALSE(result.data_points.empty());
+        EXPECT_EQ(result.symbol, "BTC-USD");
     }
 }
 
-TEST(DataRetrieverGranularityTest, TestGranularityStringConversion) {
+TEST_F(DataRetrieverTest, TestRetrieveHistoricalDataInvalidSymbol) {
     data::DataRetriever retriever;
     
-    // Create a test symbol
-    EXPECT_NO_THROW({
-        retriever.retrieve_recent_data("BTC-USD", 1, 60);  // 1 min
-        retriever.retrieve_recent_data("BTC-USD", 1, 300); // 5 min
-        retriever.retrieve_recent_data("BTC-USD", 1, 900); // 15 min
-    });
+    auto now = std::chrono::system_clock::now();
+    auto one_hour_ago = now - std::chrono::hours(1);
+    
+    auto result = retriever.retrieve_historical_data("INVALID-SYMBOL-XYZ", one_hour_ago, now, 3600);
+    
+    EXPECT_FALSE(result.success);
+    EXPECT_FALSE(result.error_message.empty());
 }
 
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

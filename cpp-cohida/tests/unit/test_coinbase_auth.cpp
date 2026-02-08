@@ -21,7 +21,3 @@ TEST(CoinbaseClientAuthTest, InitializationWithPartialCredentials) {
     EXPECT_FALSE(client2.is_authenticated());
 }
 
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

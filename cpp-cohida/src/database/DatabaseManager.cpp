@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 
+namespace {
 std::string format_time_point(const std::chrono::system_clock::time_point& tp) {
     auto t = std::chrono::system_clock::to_time_t(tp);
     std::tm tm;
@@ -22,6 +23,7 @@ std::chrono::system_clock::time_point string_to_time_point(const std::string& s)
     iss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
     return std::chrono::system_clock::from_time_t(mktime(&tm));
 }
+} // anonymous namespace
 
 namespace database {
 

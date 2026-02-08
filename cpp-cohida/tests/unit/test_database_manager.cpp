@@ -70,7 +70,3 @@ TEST(DatabaseManagerGranularityTest, TestGranularityHandling) {
     EXPECT_TRUE(db_manager_3600.test_connection());
 }
 
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
