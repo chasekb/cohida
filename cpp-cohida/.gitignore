@@ -64,6 +64,7 @@ CTestTestfile.cmake
 _deps/
 
 # Vcpkg
+vcpkg/
 vcpkg_installed/
 .vcpkg-root
 
