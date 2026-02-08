@@ -5,6 +5,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <optional>
+#include <ostream>
 #include <nlohmann/json.hpp>
 #include "utils/Logger.h"
 #include <boost/multiprecision/cpp_dec_float.hpp>
@@ -100,6 +101,12 @@ public:
 };
 
 } // namespace models
+
+// ostream operator for Decimal type
+inline std::ostream& operator<<(std::ostream& os, const models::Decimal& d) {
+    os << d.convert_to<double>();
+    return os;
+}
 
 // fmt formatter for Decimal type (must be in fmt namespace, outside models)
 template<>
