@@ -36,8 +36,12 @@ public:
 
     void ensure_curl_initialized() {
         if (!curl_initialized_) {
-            curl_global_init(CURL_GLOBAL_DEFAULT);
-            curl_initialized_ = true;
+            try {
+                curl_global_init(CURL_GLOBAL_DEFAULT);
+                curl_initialized_ = true;
+            } catch (...) {
+                // Ignore curl init errors
+            }
         }
     }
 
@@ -198,6 +202,11 @@ CoinbaseClient::CoinbaseClient(const std::string& apiKey, const std::string& api
 CoinbaseClient::~CoinbaseClient() = default;
 
 bool CoinbaseClient::test_connection() {
+    if (!pImpl) {
+        LOG_ERROR("CoinbaseClient not initialized");
+        return false;
+    }
+    
     try {
         std::string url = pImpl->get_api_base_url() + "/time";
         std::string response = pImpl->make_request(url);
