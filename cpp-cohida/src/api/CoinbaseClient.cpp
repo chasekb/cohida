@@ -24,9 +24,21 @@ std::string time_point_to_iso_string(system_clock::time_point tp) {
 class CoinbaseClient::Impl {
 public:
     Impl(const std::string& apiKey, const std::string& apiSecret, const std::string& apiPassphrase) 
-        : apiKey_(apiKey), apiSecret_(apiSecret), apiPassphrase_(apiPassphrase) {
-        curl_global_init(CURL_GLOBAL_DEFAULT);
-        LOG_INFO("Coinbase API client initialized");
+        : apiKey_(apiKey), apiSecret_(apiSecret), apiPassphrase_(apiPassphrase), curl_initialized_(false) {
+        // Defer curl_global_init until first use to avoid issues when Config is not loaded
+    }
+
+    ~Impl() {
+        if (curl_initialized_) {
+            curl_global_cleanup();
+        }
+    }
+
+    void ensure_curl_initialized() {
+        if (!curl_initialized_) {
+            curl_global_init(CURL_GLOBAL_DEFAULT);
+            curl_initialized_ = true;
+        }
     }
 
     std::string generateSignature(const std::string& timestamp, const std::string& method,
@@ -79,10 +91,7 @@ public:
     std::string apiKey_;
     std::string apiSecret_;
     std::string apiPassphrase_;
-
-    ~Impl() {
-        curl_global_cleanup();
-    }
+    bool curl_initialized_;
 
     CURL* create_curl() {
         CURL* curl = curl_easy_init();
@@ -94,6 +103,7 @@ public:
 
     std::string make_request(const std::string& url, const std::string& method = "GET", 
                             const std::string& body = "") {
+        ensure_curl_initialized();
         CURL* curl = create_curl();
         std::string response;
 
