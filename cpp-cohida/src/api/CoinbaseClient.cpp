@@ -189,15 +189,35 @@ public:
     }
 
     std::string get_api_base_url() {
-        return config::Config::get_instance().sandbox_mode() ?
-            "https://api-public.sandbox.pro.coinbase.com" :
-            "https://api.pro.coinbase.com";
+        try {
+            // Try to access Config singleton
+            auto& config_instance = config::Config::get_instance();
+            bool sandbox = config_instance.sandbox_mode();
+            return sandbox ?
+                "https://api-public.sandbox.pro.coinbase.com" :
+                "https://api.pro.coinbase.com";
+        } catch (const std::exception& ex) {
+            LOG_ERROR("Failed to get sandbox mode from Config: {}", ex.what());
+            return "https://api.pro.coinbase.com"; // Default to production
+        } catch (...) {
+            LOG_ERROR("Failed to get sandbox mode from Config: unknown exception");
+            return "https://api.pro.coinbase.com"; // Default to production
+        }
     }
 };
 
 CoinbaseClient::CoinbaseClient(const std::string& apiKey, const std::string& apiSecret, 
-                               const std::string& apiPassphrase) 
-    : pImpl(std::make_unique<Impl>(apiKey, apiSecret, apiPassphrase)) {}
+                               const std::string& apiPassphrase) {
+    try {
+        pImpl = std::make_unique<Impl>(apiKey, apiSecret, apiPassphrase);
+    } catch (const std::exception& ex) {
+        LOG_ERROR("Failed to create CoinbaseClient implementation: {}", ex.what());
+        pImpl = nullptr;
+    } catch (...) {
+        LOG_ERROR("Failed to create CoinbaseClient implementation: unknown exception");
+        pImpl = nullptr;
+    }
+}
 
 CoinbaseClient::~CoinbaseClient() = default;
 
@@ -208,6 +228,12 @@ bool CoinbaseClient::test_connection() {
     }
     
     try {
+        // Check if pImpl is valid before calling methods
+        if (!pImpl) {
+            LOG_ERROR("pImpl is null in test_connection");
+            return false;
+        }
+        
         std::string url = pImpl->get_api_base_url() + "/time";
         std::string response = pImpl->make_request(url);
         auto json_response = json::parse(response);

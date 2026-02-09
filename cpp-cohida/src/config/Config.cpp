@@ -73,10 +73,7 @@ std::string Config::get_string(const std::string& key, const std::string& defaul
     if (it != config_.end()) {
         return it->second;
     }
-    if (default_value.empty()) {
-        throw ConfigKeyNotFoundException(key);
-    }
-    return default_value;
+    return default_value; // Always return default value, never throw
 }
 
 int Config::get_int(const std::string& key, int default_value) const {

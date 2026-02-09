@@ -1,13 +1,19 @@
 #include <gtest/gtest.h>
 #include "api/CoinbaseClient.h"
+#include "config/Config.h"
 
 using namespace api;
+using namespace config;
 
 class CoinbaseClientTest : public ::testing::Test {
 protected:
     std::unique_ptr<CoinbaseClient> client;
 
     void SetUp() override {
+        // Load test configuration
+        config::Config& config = config::Config::get_instance();
+        config.load(".env.test");
+        
         client = std::make_unique<CoinbaseClient>();
     }
 
