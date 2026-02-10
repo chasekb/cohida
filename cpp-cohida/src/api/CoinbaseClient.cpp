@@ -261,10 +261,33 @@ bool CoinbaseClient::test_connection() {
 
 std::vector<models::SymbolInfo> CoinbaseClient::get_available_symbols() {
     try {
-        std::string url = pImpl->get_api_base_url() + "/products";
+        std::string url = pImpl->get_api_base_url() + "/api/v3/brokerage/products";
         std::string response = pImpl->make_request(url);
+        auto json_response = json::parse(response);
+        
+        // Check if response has "products" array (Coinbase Advanced Trade API format)
+        if (json_response.contains("products")) {
+            auto products = json_response.at("products");
+            std::vector<models::SymbolInfo> symbols;
+            for (const auto& product : products) {
+                if (product.contains("product_id") && product.contains("base_currency") &&
+                    product.contains("quote_currency") && product.contains("display_name") &&
+                    product.contains("status")) {
+                    symbols.emplace_back(
+                        product.at("product_id").get<std::string>(),
+                        product.at("base_currency").get<std::string>(),
+                        product.at("quote_currency").get<std::string>(),
+                        product.at("display_name").get<std::string>(),
+                        product.at("status").get<std::string>()
+                    );
+                }
+            }
+            LOG_INFO("Retrieved {} available symbols from Coinbase", symbols.size());
+            return symbols;
+        }
+        
+        // Fallback to old format (if API endpoint changes back)
         auto products = json::parse(response);
-
         std::vector<models::SymbolInfo> symbols;
         for (const auto& product : products) {
             if (product.contains("id") && product.contains("base_currency") &&
@@ -279,7 +302,6 @@ std::vector<models::SymbolInfo> CoinbaseClient::get_available_symbols() {
                 );
             }
         }
-
         LOG_INFO("Retrieved {} available symbols from Coinbase", symbols.size());
         return symbols;
     } catch (const std::exception& ex) {
@@ -290,20 +312,35 @@ std::vector<models::SymbolInfo> CoinbaseClient::get_available_symbols() {
 
 std::optional<models::SymbolInfo> CoinbaseClient::get_symbol_info(const std::string& symbol) {
     try {
-        std::string url = pImpl->get_api_base_url() + "/products/" + symbol;
+        std::string url = pImpl->get_api_base_url() + "/api/v3/brokerage/products/" + symbol;
         std::string response = pImpl->make_request(url);
-        auto product = json::parse(response);
-
-        if (product.contains("id") && product.contains("base_currency") &&
-            product.contains("quote_currency") && product.contains("display_name") &&
-            product.contains("status")) {
+        auto json_response = json::parse(response);
+        
+        // Check if response is in Coinbase Advanced Trade API format
+        if (json_response.contains("product_id") && json_response.contains("base_currency") &&
+            json_response.contains("quote_currency") && json_response.contains("display_name") &&
+            json_response.contains("status")) {
             LOG_DEBUG("Retrieved symbol info for {}", symbol);
             return models::SymbolInfo(
-                product.at("id").get<std::string>(),
-                product.at("base_currency").get<std::string>(),
-                product.at("quote_currency").get<std::string>(),
-                product.at("display_name").get<std::string>(),
-                product.at("status").get<std::string>()
+                json_response.at("product_id").get<std::string>(),
+                json_response.at("base_currency").get<std::string>(),
+                json_response.at("quote_currency").get<std::string>(),
+                json_response.at("display_name").get<std::string>(),
+                json_response.at("status").get<std::string>()
+            );
+        }
+        
+        // Fallback to old format
+        if (json_response.contains("id") && json_response.contains("base_currency") &&
+            json_response.contains("quote_currency") && json_response.contains("display_name") &&
+            json_response.contains("status")) {
+            LOG_DEBUG("Retrieved symbol info for {}", symbol);
+            return models::SymbolInfo(
+                json_response.at("id").get<std::string>(),
+                json_response.at("base_currency").get<std::string>(),
+                json_response.at("quote_currency").get<std::string>(),
+                json_response.at("display_name").get<std::string>(),
+                json_response.at("status").get<std::string>()
             );
         }
 
@@ -344,14 +381,39 @@ std::vector<models::CryptoPriceData> CoinbaseClient::get_historical_candles(
     int granularity
 ) {
     try {
-        std::string url = pImpl->get_api_base_url() + "/products/" + symbol + "/candles?" +
+        std::string url = pImpl->get_api_base_url() + "/api/v3/brokerage/products/" + symbol + "/candles?" +
                         "start=" + time_point_to_iso_string(start) +
                         "&end=" + time_point_to_iso_string(end) +
                         "&granularity=" + std::to_string(granularity);
 
         std::string response = pImpl->make_request(url);
+        auto json_response = json::parse(response);
+        
+        // Check if response has "candles" array (Coinbase Advanced Trade API format)
+        if (json_response.contains("candles")) {
+            auto candles = json_response.at("candles");
+            std::vector<models::CryptoPriceData> data_points;
+            for (const auto& candle : candles) {
+                if (candle.contains("start") && candle.contains("low") && candle.contains("high") &&
+                    candle.contains("open") && candle.contains("close") && candle.contains("volume")) {
+                    auto timestamp = system_clock::time_point(seconds(std::stoll(candle.at("start").get<std::string>())));
+                    data_points.emplace_back(
+                        symbol,
+                        timestamp,
+                        models::Decimal(candle.at("open").get<std::string>()),
+                        models::Decimal(candle.at("high").get<std::string>()),
+                        models::Decimal(candle.at("low").get<std::string>()),
+                        models::Decimal(candle.at("close").get<std::string>()),
+                        models::Decimal(candle.at("volume").get<std::string>())
+                    );
+                }
+            }
+            LOG_DEBUG("Retrieved {} candles for {}", data_points.size(), symbol);
+            return data_points;
+        }
+        
+        // Fallback to old format (array of arrays)
         auto candles = json::parse(response);
-
         std::vector<models::CryptoPriceData> data_points;
         for (const auto& candle : candles) {
             if (candle.size() >= 6) {
@@ -367,7 +429,6 @@ std::vector<models::CryptoPriceData> CoinbaseClient::get_historical_candles(
                 );
             }
         }
-
         LOG_DEBUG("Retrieved {} candles for {}", data_points.size(), symbol);
         return data_points;
     } catch (const std::exception& ex) {
