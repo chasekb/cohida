@@ -197,14 +197,14 @@ public:
             auto& config_instance = config::Config::get_instance();
             bool sandbox = config_instance.sandbox_mode();
             return sandbox ?
-                "https://api-public.sandbox.pro.coinbase.com" :
-                "https://api.pro.coinbase.com";
+                "https://api-public.sandbox.coinbase.com" :
+                "https://api.coinbase.com";
         } catch (const std::exception& ex) {
             LOG_ERROR("Failed to get sandbox mode from Config: {}", ex.what());
-            return "https://api.pro.coinbase.com"; // Default to production
+            return "https://api.coinbase.com"; // Default to production
         } catch (...) {
             LOG_ERROR("Failed to get sandbox mode from Config: unknown exception");
-            return "https://api.pro.coinbase.com"; // Default to production
+            return "https://api.coinbase.com"; // Default to production
         }
     }
 };
