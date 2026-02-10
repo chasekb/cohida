@@ -25,11 +25,11 @@ private:
 };
 
 // Helper macros for convenient logging
-#define LOG_TRACE(...) utils::Logger::get_logger()->trace(__VA_ARGS__)
-#define LOG_DEBUG(...) utils::Logger::get_logger()->debug(__VA_ARGS__)
-#define LOG_INFO(...) utils::Logger::get_logger()->info(__VA_ARGS__)
-#define LOG_WARN(...) utils::Logger::get_logger()->warn(__VA_ARGS__)
-#define LOG_ERROR(...) utils::Logger::get_logger()->error(__VA_ARGS__)
-#define LOG_CRITICAL(...) utils::Logger::get_logger()->critical(__VA_ARGS__)
+#define LOG_TRACE(...) do { if (utils::Logger::get_logger()) utils::Logger::get_logger()->trace(__VA_ARGS__); } while(0)
+#define LOG_DEBUG(...) do { if (utils::Logger::get_logger()) utils::Logger::get_logger()->debug(__VA_ARGS__); } while(0)
+#define LOG_INFO(...) do { if (utils::Logger::get_logger()) utils::Logger::get_logger()->info(__VA_ARGS__); } while(0)
+#define LOG_WARN(...) do { if (utils::Logger::get_logger()) utils::Logger::get_logger()->warn(__VA_ARGS__); } while(0)
+#define LOG_ERROR(...) do { if (utils::Logger::get_logger()) utils::Logger::get_logger()->error(__VA_ARGS__); } while(0)
+#define LOG_CRITICAL(...) do { if (utils::Logger::get_logger()) utils::Logger::get_logger()->critical(__VA_ARGS__); } while(0)
 
 } // namespace utils

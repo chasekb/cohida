@@ -1,15 +1,20 @@
 #include <gtest/gtest.h>
 #include "api/CoinbaseClient.h"
 #include "config/Config.h"
+#include "utils/Logger.h"
 
 using namespace api;
 using namespace config;
+using namespace utils;
 
 class CoinbaseClientTest : public ::testing::Test {
 protected:
     std::unique_ptr<CoinbaseClient> client;
 
     void SetUp() override {
+        // Initialize logger
+        utils::Logger::initialize("debug", "test_logs/test_coinbase_client.log");
+        
         // Load test configuration
         config::Config& config = config::Config::get_instance();
         config.load(".env.test");
