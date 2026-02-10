@@ -117,6 +117,9 @@ public:
 
         struct curl_slist* headers = nullptr;
 
+        // Set User-Agent header (required by Coinbase API)
+        headers = curl_slist_append(headers, "User-Agent: Cohida/1.0.0");
+        
         // Add authentication headers if credentials are provided
         if (!apiKey_.empty() && !apiSecret_.empty()) {
             std::string timestamp = getTimestamp();
