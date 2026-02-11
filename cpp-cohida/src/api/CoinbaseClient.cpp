@@ -243,13 +243,17 @@ bool CoinbaseClient::test_connection() {
             return false;
         }
         
-        std::string url = pImpl->get_api_base_url() + "/time";
+        // Try to get product information (public endpoint)
+        std::string url = pImpl->get_api_base_url() + "/api/v3/brokerage/products?limit=1";
         std::string response = pImpl->make_request(url);
         auto json_response = json::parse(response);
 
-        if (json_response.contains("epoch")) {
-            LOG_INFO("Coinbase API connection test successful");
-            return true;
+        if (json_response.contains("products")) {
+            auto products = json_response.at("products");
+            if (products.is_array() && !products.empty()) {
+                LOG_INFO("Coinbase API connection test successful");
+                return true;
+            }
         }
         LOG_WARN("Coinbase API connection test returned empty response");
         return false;
