@@ -23,25 +23,30 @@ TEST_F(DataPointTest, CryptoPriceDataValidation) {
     CryptoPriceData valid_data("BTC-USD", now, price, price, price, price, volume);
     EXPECT_TRUE(valid_data.isValid());
 
-    CryptoPriceData invalid_symbol("", now, price, price, price, price, volume);
-    EXPECT_FALSE(invalid_symbol.isValid());
+    EXPECT_THROW({
+        CryptoPriceData invalid_symbol("", now, price, price, price, price, volume);
+    }, std::invalid_argument);
 
-    CryptoPriceData invalid_price("BTC-USD", now, Decimal("-10.0"), price, price, price, volume);
-    EXPECT_FALSE(invalid_price.isValid());
+    EXPECT_THROW({
+        CryptoPriceData invalid_price("BTC-USD", now, Decimal("-10.0"), price, price, price, volume);
+    }, std::invalid_argument);
 
-    CryptoPriceData invalid_volume("BTC-USD", now, price, price, price, price, Decimal("-100.0"));
-    EXPECT_FALSE(invalid_volume.isValid());
+    EXPECT_THROW({
+        CryptoPriceData invalid_volume("BTC-USD", now, price, price, price, price, Decimal("-100.0"));
+    }, std::invalid_argument);
 }
 
 TEST_F(DataPointTest, SymbolInfoValidation) {
     SymbolInfo valid_symbol("BTC-USD", "BTC", "USD", "Bitcoin USD", "online");
     EXPECT_TRUE(valid_symbol.isValid());
 
-    SymbolInfo invalid_symbol("", "BTC", "USD", "Bitcoin USD", "online");
-    EXPECT_FALSE(invalid_symbol.isValid());
+    EXPECT_THROW({
+        SymbolInfo invalid_symbol("", "BTC", "USD", "Bitcoin USD", "online");
+    }, std::invalid_argument);
 
-    SymbolInfo invalid_base("", "", "USD", "Bitcoin USD", "online");
-    EXPECT_FALSE(invalid_base.isValid());
+    EXPECT_THROW({
+        SymbolInfo invalid_base("", "", "USD", "Bitcoin USD", "online");
+    }, std::invalid_argument);
 
     SymbolInfo invalid_status("BTC-USD", "BTC", "USD", "Bitcoin USD", "invalid");
     EXPECT_TRUE(invalid_status.isValid());
@@ -54,14 +59,17 @@ TEST_F(DataPointTest, DataRetrievalRequestValidation) {
     DataRetrievalRequest valid_request("BTC-USD", now, tomorrow, 3600);
     EXPECT_TRUE(valid_request.isValid());
 
-    DataRetrievalRequest invalid_symbol("", now, tomorrow, 3600);
-    EXPECT_FALSE(invalid_symbol.isValid());
+    EXPECT_THROW({
+        DataRetrievalRequest invalid_symbol("", now, tomorrow, 3600);
+    }, std::invalid_argument);
 
-    DataRetrievalRequest invalid_date("BTC-USD", tomorrow, now, 3600);
-    EXPECT_FALSE(invalid_date.isValid());
+    EXPECT_THROW({
+        DataRetrievalRequest invalid_date("BTC-USD", tomorrow, now, 3600);
+    }, std::invalid_argument);
 
-    DataRetrievalRequest invalid_granularity("BTC-USD", now, tomorrow, 123);
-    EXPECT_FALSE(invalid_granularity.isValid());
+    EXPECT_THROW({
+        DataRetrievalRequest invalid_granularity("BTC-USD", now, tomorrow, 123);
+    }, std::invalid_argument);
 }
 
 TEST_F(DataPointTest, SymbolValidator) {

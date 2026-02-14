@@ -305,11 +305,11 @@ std::vector<models::CryptoPriceData> DatabaseManager::read_data(const std::strin
                 models::CryptoPriceData data_point(
                     row["symbol"].as<std::string>(),
                     string_to_time_point(row["timestamp"].as<std::string>()),
-                    row["open_price"].as<double>(),
-                    row["high_price"].as<double>(),
-                    row["low_price"].as<double>(),
-                    row["close_price"].as<double>(),
-                    row["volume"].as<double>()
+                    models::Decimal(row["open_price"].as<std::string>().c_str()),
+                    models::Decimal(row["high_price"].as<std::string>().c_str()),
+                    models::Decimal(row["low_price"].as<std::string>().c_str()),
+                    models::Decimal(row["close_price"].as<std::string>().c_str()),
+                    models::Decimal(row["volume"].as<std::string>().c_str())
                 );
                 
                 data_points.push_back(std::move(data_point));

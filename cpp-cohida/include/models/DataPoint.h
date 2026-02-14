@@ -8,7 +8,8 @@
 #include <ostream>
 #include <nlohmann/json.hpp>
 #include "utils/Logger.h"
-#include <boost/multiprecision/cpp_dec_float.hpp>
+#include <boost/decimal/decimal128_t.hpp>
+#include <boost/decimal/iostream.hpp>
 #include <algorithm>
 #include <fmt/format.h>
 
@@ -16,7 +17,7 @@ namespace models {
 
 using namespace std::chrono;
 using json = nlohmann::json;
-using Decimal = boost::multiprecision::cpp_dec_float_100;
+using Decimal = boost::decimal::decimal128_t;
 
 class CryptoPriceData {
 public:
@@ -104,7 +105,7 @@ public:
 
 // ostream operator for Decimal type
 inline std::ostream& operator<<(std::ostream& os, const models::Decimal& d) {
-    os << d.convert_to<double>();
+    os << boost::decimal::to_float<models::Decimal, double>(d);
     return os;
 }
 
@@ -113,7 +114,7 @@ template<>
 struct fmt::formatter<models::Decimal> : fmt::formatter<double> {
     template<typename FormatContext>
     auto format(models::Decimal d, FormatContext& ctx) const {
-        return fmt::formatter<double>::format(d.convert_to<double>(), ctx);
+        return fmt::formatter<double>::format(boost::decimal::to_float<models::Decimal, double>(d), ctx);
     }
 };
 

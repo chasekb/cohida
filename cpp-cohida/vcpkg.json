@@ -11,6 +11,7 @@
         "spdlog",
         "date",
         "eigen3",
-        "boost-multiprecision"
+        "boost-decimal",
+        "jwt-cpp"
     ]
 }

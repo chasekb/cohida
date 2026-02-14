@@ -28,11 +28,11 @@ TEST_F(DatabaseManagerTest, TestWriteAndReadData) {
     models::CryptoPriceData data_point(
         "BTC-USD",
         std::chrono::system_clock::now(),
-        50000.0,
-        50500.0,
-        49500.0,
-        50200.0,
-        100.5
+        models::Decimal("50000.0"),
+        models::Decimal("50500.0"),
+        models::Decimal("49500.0"),
+        models::Decimal("50200.0"),
+        models::Decimal("100.5")
     );
     
     // Write data

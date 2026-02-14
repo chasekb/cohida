@@ -44,6 +44,7 @@ find_package(spdlog REQUIRED)
 find_package(date REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
+find_package(jwt-cpp REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Targets
@@ -73,6 +74,7 @@ target_link_libraries(cohida-core
         date::date
         Eigen3::Eigen
         ${Boost_LIBRARIES}
+        jwt-cpp::jwt-cpp
 )
 
 # Main executable
