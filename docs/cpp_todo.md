@@ -87,27 +87,27 @@ vcpkg installation and package management is not completed yet. The build system
 ## Phase 4: CLI & UI (Week 6)
 
 ### 1. Command-Line Interface
-- [ ] Set up CLI11 library integration
-- [ ] Create main.cpp entry point
-- [ ] Implement command structure
-- [ ] Add global options (verbose, output directory)
+- [x] Set up CLI11 library integration
+- [x] Create main.cpp entry point
+- [x] Implement command structure
+- [x] Add global options (verbose, output directory)
 
 ### 2. Command Implementations
-- [ ] Implement "retrieve" command
-- [ ] Implement "retrieve-all" command
-- [ ] Implement "read" command
-- [ ] Implement "test" command
-- [ ] Implement "symbols" command
-- [ ] Implement "info" command
+- [x] Implement "retrieve" command
+- [x] Implement "retrieve-all" command
+- [x] Implement "read" command
+- [x] Implement "test" command
+- [x] Implement "symbols" command
+- [x] Implement "info" command
 - [ ] Implement "ml-train" command
 - [ ] Implement "ml-models" command
 - [ ] Implement "ml-info" command
 
 ### 3. File Output
-- [ ] Implement CSV writer
-- [ ] Implement JSON writer
-- [ ] Handle output directory creation
-- [ ] Test file writing functionality
+- [x] Implement CSV writer
+- [x] Implement JSON writer
+- [x] Handle output directory creation
+- [x] Test file writing functionality
 
 ## Phase 5: Machine Learning (Weeks 7-9)
 

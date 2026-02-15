@@ -12,6 +12,7 @@
         "date",
         "eigen3",
         "boost-decimal",
-        "jwt-cpp"
+        "jwt-cpp",
+        "fmt"
     ]
 }

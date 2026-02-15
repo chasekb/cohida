@@ -45,6 +45,7 @@ find_package(date REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
 find_package(jwt-cpp REQUIRED)
+find_package(fmt REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Targets
@@ -57,6 +58,7 @@ add_library(cohida-core
     src/utils/Logger.cpp
     src/database/DatabaseManager.cpp
     src/data/DataRetriever.cpp
+    src/data/FileWriter.cpp
 )
 
 target_include_directories(cohida-core
@@ -65,15 +67,17 @@ target_include_directories(cohida-core
 )
 
 target_link_libraries(cohida-core
-    PRIVATE
+    PUBLIC
         nlohmann_json::nlohmann_json
+        date::date
+        Eigen3::Eigen
+        ${Boost_LIBRARIES}
+        fmt::fmt
+    PRIVATE
         CURL::libcurl
         libpqxx::pqxx
         CLI11::CLI11
         spdlog::spdlog
-        date::date
-        Eigen3::Eigen
-        ${Boost_LIBRARIES}
         jwt-cpp::jwt-cpp
 )
 
@@ -85,6 +89,8 @@ add_executable(cohida
 target_link_libraries(cohida
     PRIVATE
         cohida-core
+        CLI11::CLI11
+        spdlog::spdlog
 )
 
 # Tests
