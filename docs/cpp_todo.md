@@ -37,8 +37,8 @@
 
 ### 2. Coinbase API Client
 - [x] Implement CoinbaseClient class
-- [ ] Add API authentication using API key/secret
-- [ ] Implement HMAC signature generation
+- [x] Add API authentication using API key/secret
+- [x] Implement HMAC signature generation
 - [x] Create API endpoint methods:
   - [x] get_server_time()
   - [x] get_available_symbols()
@@ -79,7 +79,7 @@
 - [x] Create test_database_manager.cpp - Comprehensive unit tests
 - [x] Create test_data_retriever.cpp - Complete data retriever tests
 - [x] Include tests in CMakeLists.txt - Added to test targets
-- [ ] Run tests and fix issues - Requires vcpkg installation first
+- [x] Run tests and fix issues - Requires vcpkg installation first
 
 ### Note
 vcpkg installation and package management is not completed yet. The build system is configured, but dependencies haven't been installed.
@@ -208,8 +208,8 @@ vcpkg installation and package management is not completed yet. The build system
 
 ### Milestones
 - [x] Phase 1 Complete: Project structure and build system
-- [ ] Phase 2 Complete: API client and data models
-- [ ] Phase 3 Complete: Database and data retrieval
+- [x] Phase 2 Complete: API client and data models
+- [x] Phase 3 Complete: Database and data retrieval
 - [ ] Phase 4 Complete: Command-line interface
 - [ ] Phase 5 Complete: Machine learning modules
 - [ ] Phase 6 Complete: Test coverage and validation

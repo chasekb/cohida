@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
+  <id>tag:github.com,2008:https://github.com/boostorg/decimal/releases</id>
+  <link type="text/html" rel="alternate" href="https://github.com/boostorg/decimal/releases"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/boostorg/decimal/releases.atom"/>
+  <title>Tags from decimal</title>
+  <updated>2026-01-27T17:54:48Z</updated>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v6.0.1</id>
+    <updated>2026-01-27T18:23:42Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v6.0.1"/>
+    <title>v6.0.1</title>
+    <content></content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v6.0.0</id>
+    <updated>2026-01-15T18:27:17Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v6.0.0"/>
+    <title>v6.0.0</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/1301&quot;&gt;#1301&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to Master for v6.0.0&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v5.2.0</id>
+    <updated>2025-09-03T11:45:09Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v5.2.0"/>
+    <title>v5.2.0</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/1021&quot;&gt;#1021&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to master for v5.2.0&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v5.1.2</id>
+    <updated>2025-08-29T13:22:01Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v5.1.2"/>
+    <title>v5.1.2</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/1004&quot;&gt;#1004&lt;/a&gt; from cppalliance/bugfix_rel&lt;/p&gt;
+
+&lt;p&gt;Merge fix for &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/issues/1002&quot;&gt;#1002&lt;/a&gt; to master&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v5.1.1</id>
+    <updated>2025-08-15T15:19:20Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v5.1.1"/>
+    <title>v5.1.1</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/991&quot;&gt;#991&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to Master for v5.1.1&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v5.1.0</id>
+    <updated>2025-08-08T12:07:11Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v5.1.0"/>
+    <title>v5.1.0</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/980&quot;&gt;#980&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to master for v5.1.0&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v5.0.0</id>
+    <updated>2025-07-31T23:01:28Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v5.0.0"/>
+    <title>v5.0.0</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/953&quot;&gt;#953&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to Master for v5.0.0&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v4.1.0</id>
+    <updated>2025-07-15T00:37:14Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v4.1.0"/>
+    <title>v4.1.0</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/913&quot;&gt;#913&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to master for v4.1.0&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v4.0.0</id>
+    <updated>2025-07-02T15:51:27Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v4.0.0"/>
+    <title>v4.0.0</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/902&quot;&gt;#902&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to master for 4.0.0&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/660555952/v3.0.1</id>
+    <updated>2025-01-20T15:06:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/boostorg/decimal/releases/tag/v3.0.1"/>
+    <title>v3.0.1</title>
+    <content type="html">&lt;p&gt;Merge pull request &lt;a class=&quot;issue-link js-issue-link&quot; href=&quot;https://github.com/boostorg/decimal/pull/795&quot;&gt;#795&lt;/a&gt; from cppalliance/develop&lt;/p&gt;
+
+&lt;p&gt;Merge to Master for 3.0.1&lt;/p&gt;</content>
+    <author>
+      <name>mborland</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/3745830?s=60&amp;v=4"/>
+  </entry>
+</feed>

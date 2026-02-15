@@ -296,6 +296,8 @@ std::vector<models::SymbolInfo> CoinbaseClient::get_available_symbols() {
   try {
     std::string url = pImpl->get_api_base_url() + "/api/v3/brokerage/products";
     std::string response = pImpl->make_request(url);
+    LOG_DEBUG("get_available_symbols response: {}",
+              response); // Added debug log
     auto json_response = json::parse(response);
 
     // Check if response has "products" array (Coinbase Advanced Trade API
@@ -304,15 +306,42 @@ std::vector<models::SymbolInfo> CoinbaseClient::get_available_symbols() {
       auto products = json_response.at("products");
       std::vector<models::SymbolInfo> symbols;
       for (const auto &product : products) {
-        if (product.contains("product_id") &&
-            product.contains("base_currency") &&
-            product.contains("quote_currency") &&
-            product.contains("display_name") && product.contains("status")) {
+        std::string base_currency;
+        if (product.contains("base_currency")) {
+          base_currency = product.at("base_currency").get<std::string>();
+        } else if (product.contains("base_currency_id")) {
+          base_currency = product.at("base_currency_id").get<std::string>();
+        }
+
+        std::string quote_currency;
+        if (product.contains("quote_currency")) {
+          quote_currency = product.at("quote_currency").get<std::string>();
+        } else if (product.contains("quote_currency_id")) {
+          quote_currency = product.at("quote_currency_id").get<std::string>();
+        }
+
+        if (product.contains("product_id") && !base_currency.empty() &&
+            !quote_currency.empty() && product.contains("display_name") &&
+            product.contains("status")) {
           symbols.emplace_back(product.at("product_id").get<std::string>(),
-                               product.at("base_currency").get<std::string>(),
-                               product.at("quote_currency").get<std::string>(),
+                               base_currency, quote_currency,
                                product.at("display_name").get<std::string>(),
                                product.at("status").get<std::string>());
+        } else {
+          if (symbols.size() < 5) { // Log first 5 failures to avoid spam
+            std::string missing;
+            if (!product.contains("product_id"))
+              missing += "product_id ";
+            if (base_currency.empty())
+              missing += "base_currency(_id) ";
+            if (quote_currency.empty())
+              missing += "quote_currency(_id) ";
+            if (!product.contains("display_name"))
+              missing += "display_name ";
+            if (!product.contains("status"))
+              missing += "status ";
+            LOG_WARN("Skipping product due to missing fields: {}", missing);
+          }
         }
       }
       LOG_INFO("Retrieved {} available symbols from Coinbase", symbols.size());
@@ -350,17 +379,27 @@ CoinbaseClient::get_symbol_info(const std::string &symbol) {
     auto json_response = json::parse(response);
 
     // Check if response is in Coinbase Advanced Trade API format
-    if (json_response.contains("product_id") &&
-        json_response.contains("base_currency") &&
-        json_response.contains("quote_currency") &&
-        json_response.contains("display_name") &&
+    std::string base_currency;
+    if (json_response.contains("base_currency")) {
+      base_currency = json_response.at("base_currency").get<std::string>();
+    } else if (json_response.contains("base_currency_id")) {
+      base_currency = json_response.at("base_currency_id").get<std::string>();
+    }
+
+    std::string quote_currency;
+    if (json_response.contains("quote_currency")) {
+      quote_currency = json_response.at("quote_currency").get<std::string>();
+    } else if (json_response.contains("quote_currency_id")) {
+      quote_currency = json_response.at("quote_currency_id").get<std::string>();
+    }
+
+    if (json_response.contains("product_id") && !base_currency.empty() &&
+        !quote_currency.empty() && json_response.contains("display_name") &&
         json_response.contains("status")) {
       LOG_DEBUG("Retrieved symbol info for {}", symbol);
       return models::SymbolInfo(
-          json_response.at("product_id").get<std::string>(),
-          json_response.at("base_currency").get<std::string>(),
-          json_response.at("quote_currency").get<std::string>(),
-          json_response.at("display_name").get<std::string>(),
+          json_response.at("product_id").get<std::string>(), base_currency,
+          quote_currency, json_response.at("display_name").get<std::string>(),
           json_response.at("status").get<std::string>());
     }
 
@@ -410,15 +449,43 @@ CoinbaseClient::get_current_price(const std::string &symbol) {
   }
 }
 
+// Helper to get granularity string
+std::string get_granularity_string(int granularity) {
+  switch (granularity) {
+  case 60:
+    return "ONE_MINUTE";
+  case 300:
+    return "FIVE_MINUTE";
+  case 900:
+    return "FIFTEEN_MINUTE";
+  case 3600:
+    return "ONE_HOUR";
+  case 21600:
+    return "SIX_HOUR";
+  case 86400:
+    return "ONE_DAY";
+  default:
+    return "ONE_HOUR"; // Default to 1 hour
+  }
+}
+
 std::vector<models::CryptoPriceData> CoinbaseClient::get_historical_candles(
     const std::string &symbol, system_clock::time_point start,
     system_clock::time_point end, int granularity) {
   try {
+    // Convert time_points to UNIX timestamp strings (seconds)
+    auto start_ts =
+        std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
+                           start.time_since_epoch())
+                           .count());
+    auto end_ts = std::to_string(
+        std::chrono::duration_cast<std::chrono::seconds>(end.time_since_epoch())
+            .count());
+
     std::string url = pImpl->get_api_base_url() +
                       "/api/v3/brokerage/products/" + symbol + "/candles?" +
-                      "start=" + time_point_to_iso_string(start) +
-                      "&end=" + time_point_to_iso_string(end) +
-                      "&granularity=" + std::to_string(granularity);
+                      "start=" + start_ts + "&end=" + end_ts +
+                      "&granularity=" + get_granularity_string(granularity);
 
     std::string response = pImpl->make_request(url);
     auto json_response = json::parse(response);

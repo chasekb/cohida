@@ -9,6 +9,7 @@ using namespace std;
 
 int main() {
   utils::Logger::initialize();
+  utils::Logger::set_level("debug");
   LOG_INFO("Coinbase API Client starting...");
 
   // Load configuration from environment variables or .env file

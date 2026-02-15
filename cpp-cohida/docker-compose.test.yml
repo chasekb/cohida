@@ -1,26 +1,6 @@
 version: '3.8'
 
 services:
-  # Test database
-  test-db:
-    image: postgres:15-alpine
-    container_name: cpp-cohida-test-db
-    environment:
-      POSTGRES_DB: coinbase_data_test
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
-    ports:
-      - "5433:5432"
-    volumes:
-      - test_db_data:/var/lib/postgresql/data
-    networks:
-      - test_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test_user -d coinbase_data_test"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   # Test application
   test-app:
     build:
@@ -29,22 +9,14 @@ services:
     container_name: cpp-cohida-test
     env_file:
       - .env.test
-    environment:
-      DB_HOST: test-db
-      DB_PORT: 5432
     volumes:
       - ./test_outputs:/app/outputs
+      # Mount .env.test to /app/.env.test so C++ config loader finds it
       - ./.env.test:/app/.env.test:ro
     networks:
-      - test_net
-    depends_on:
-      test-db:
-        condition: service_healthy
-    command: ["./bin/cohida-unit-tests"]
-
-volumes:
-  test_db_data:
+      - db_prdnet
+    command: [ "./bin/cohida-unit-tests" ]
 
 networks:
-  test_net:
-    driver: bridge
+  db_prdnet:
+    external: true

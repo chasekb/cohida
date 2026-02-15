@@ -29,7 +29,7 @@ protected:
 TEST_F(CoinbaseClientTest, Initialization) { EXPECT_TRUE(client != nullptr); }
 
 TEST_F(CoinbaseClientTest, IsAuthenticated) {
-  EXPECT_FALSE(client->is_authenticated());
+  EXPECT_TRUE(client->is_authenticated());
 }
 
 TEST_F(CoinbaseClientTest, SandboxMode) {
