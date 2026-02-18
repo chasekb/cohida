@@ -30,8 +30,8 @@ ENV PATH="${VCPKG_ROOT}:${PATH}"
 
 # Copy custom ports
 RUN mkdir -p /opt/vcpkg/ports/boost-decimal
-COPY vcpkg/ports/boost-decimal/portfile.cmake /opt/vcpkg/ports/boost-decimal/
-COPY vcpkg/ports/boost-decimal/vcpkg.json /opt/vcpkg/ports/boost-decimal/
+COPY custom_ports/boost-decimal/portfile.cmake /opt/vcpkg/ports/boost-decimal/
+COPY custom_ports/boost-decimal/vcpkg.json /opt/vcpkg/ports/boost-decimal/
 
 # Copy project files
 WORKDIR /app
