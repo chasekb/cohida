@@ -66,6 +66,12 @@ void Config::load_from_env() {
   if (!has_key("DB_NAME")) {
     config_["DB_NAME"] = "coinbase_data";
   }
+  if (!has_key("DB_USER")) {
+    config_["DB_USER"] = "postgres";
+  }
+  if (!has_key("DB_PASSWORD")) {
+    config_["DB_PASSWORD"] = "postgres";
+  }
   if (!has_key("LOG_LEVEL")) {
     config_["LOG_LEVEL"] = "info";
   }
