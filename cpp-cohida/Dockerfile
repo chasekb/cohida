@@ -1,4 +1,5 @@
-FROM ubuntu:22.04
+# Build stage
+FROM ubuntu:22.04 AS builder
 
 WORKDIR /app
 
@@ -40,17 +41,33 @@ COPY . .
 RUN mkdir -p build
 
 # Install dependencies using vcpkg
-# Use vcpkg from the system path (which we added /opt/vcpkg to)
 RUN vcpkg install
 
 # Build the project
 WORKDIR /app/build
-# Point to the correct toolchain file in /opt/vcpkg
-RUN cmake .. -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake
-RUN make -j$(nproc)
+RUN cmake .. -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+RUN make -j2
 
-# Run tests
-# Tests will be run by the container orchestration, not during build
+# Runtime stage
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+# Install runtime dependencies (libpq is needed for libpqxx)
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binaries from builder
+COPY --from=builder /app/build/bin/cohida ./bin/cohida
+COPY --from=builder /app/build/bin/cohida-unit-tests ./bin/cohida-unit-tests
+
+# Copy .env example and instructions (optional, since we mount .env)
+COPY .env.example .env.example
+
+# Create output directory
+RUN mkdir -p outputs
 
 # Default command
 CMD ["./bin/cohida", "--help"]

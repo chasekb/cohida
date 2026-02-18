@@ -3,6 +3,9 @@
 #include "data/DataRetriever.h"
 #include "data/FileWriter.h"
 #include "database/DatabaseManager.h"
+#include "ml/FeatureEngineer.h"
+#include "ml/ModelRegistry.h"
+#include "ml/ModelTrainer.h"
 #include "models/DataPoint.h"
 #include "utils/Logger.h"
 #include <CLI/CLI.hpp>
@@ -67,7 +70,7 @@ int main(int argc, char **argv) {
   cmd_test->callback([&]() {
     setup_logging(verbose);
     try {
-      Config::get_instance().load();
+      i Config::get_instance().load();
       auto &config = Config::get_instance();
 
       LOG_INFO("Testing Coinbase API connection...");
@@ -93,8 +96,10 @@ int main(int argc, char **argv) {
 
   // 2. Symbols Command
   auto cmd_symbols = app.add_subcommand("symbols", "List available symbols");
-  string symbols_output;
+  bool symbols_list = false;
   cmd_symbols->add_option("--output,-o", symbols_output, "Output JSON file");
+  cmd_symbols->add_flag("--list,-l", symbols_list,
+                        "Print all symbols as a simple list");
   cmd_symbols->callback([&]() {
     setup_logging(verbose);
     try {
@@ -108,6 +113,10 @@ int main(int argc, char **argv) {
 
       if (!symbols_output.empty()) {
         FileWriter::write_json(symbols, symbols_output);
+      } else if (symbols_list) {
+        for (const auto &s : symbols) {
+          cout << s.symbol << endl;
+        }
       } else {
         for (size_t i = 0; i < min(symbols.size(), static_cast<size_t>(10));
              ++i) {
@@ -136,11 +145,15 @@ int main(int argc, char **argv) {
                             config.api_passphrase());
 
       auto info = client.get_symbol_info(info_symbol);
-      cout << "Symbol: " << info.symbol << endl;
-      cout << "Display Name: " << info.display_name << endl;
-      cout << "Status: " << info.status << endl;
-      cout << "Base Currency: " << info.base_currency << endl;
-      cout << "Quote Currency: " << info.quote_currency << endl;
+      if (info) {
+        cout << "Symbol: " << info->symbol << endl;
+        cout << "Display Name: " << info->display_name << endl;
+        cout << "Status: " << info->status << endl;
+        cout << "Base Currency: " << info->base_currency << endl;
+        cout << "Quote Currency: " << info->quote_currency << endl;
+      } else {
+        LOG_ERROR("Symbol info not found for {}", info_symbol);
+      }
     } catch (const exception &e) {
       LOG_ERROR("Error fetching info for {}: {}", info_symbol, e.what());
     }
@@ -192,8 +205,9 @@ int main(int argc, char **argv) {
           }
         }
       } else {
-        LOG_ERROR("Data retrieval failed: {}",
-                  result.error_message.value_or("Unknown error"));
+        LOG_ERROR("Data retrieval failed: {}", result.error_message.empty()
+                                                   ? "Unknown error"
+                                                   : result.error_message);
       }
     } catch (const exception &e) {
       LOG_ERROR("Error retrieving data: {}", e.what());
@@ -229,7 +243,8 @@ int main(int argc, char **argv) {
         LOG_INFO("All data written to database");
       } else {
         LOG_ERROR("Failed to retrieve all data: {}",
-                  result.error_message.value_or("Unknown error"));
+                  result.error_message.empty() ? "Unknown error"
+                                               : result.error_message);
       }
 
     } catch (const exception &e) {
@@ -277,6 +292,193 @@ int main(int argc, char **argv) {
       }
     } catch (const exception &e) {
       LOG_ERROR("Error reading data: {}", e.what());
+    }
+  });
+
+  // 7. ML Train Command
+  auto cmd_ml_train = app.add_subcommand("ml-train", "Train ML model");
+  string ml_symbol, ml_start, ml_end, ml_model_type = "xgboost",
+                                      ml_task_type = "classification",
+                                      ml_registry_path = "./models";
+  int ml_granularity = 3600;
+  cmd_ml_train->add_option("--symbol,-s", ml_symbol, "Symbol (e.g., BTC-USD)")
+      ->required();
+  cmd_ml_train->add_option("--start", ml_start, "Start date (YYYY-MM-DD)");
+  cmd_ml_train->add_option("--end", ml_end, "End date (YYYY-MM-DD)");
+  cmd_ml_train->add_option("--granularity,-g", ml_granularity,
+                           "Granularity in seconds (default: 3600)");
+  cmd_ml_train->add_option("--model-type", ml_model_type,
+                           "Model type: xgboost, lightgbm (default: xgboost)");
+  cmd_ml_train->add_option("--task-type", ml_task_type,
+                           "Task type: classification, regression");
+  cmd_ml_train->add_option("--registry", ml_registry_path,
+                           "Model registry path (default: ./models)");
+
+  cmd_ml_train->callback([&]() {
+    setup_logging(verbose);
+    try {
+      Config::get_instance().load();
+
+      // Read data from database
+      DatabaseManager db(ml_granularity);
+      chrono::system_clock::time_point start_tp, end_tp;
+      if (!ml_start.empty())
+        start_tp = parse_date(ml_start);
+      else
+        start_tp = chrono::system_clock::now() - chrono::hours(24 * 365);
+      if (!ml_end.empty())
+        end_tp = parse_date(ml_end);
+      else
+        end_tp = chrono::system_clock::now();
+
+      auto data = db.read_data(ml_symbol, start_tp, end_tp);
+      LOG_INFO("Loaded {} records for training", data.size());
+
+      if (data.size() < 100) {
+        LOG_ERROR("Insufficient data for training (need at least 100 rows, "
+                  "got {})",
+                  data.size());
+        return;
+      }
+
+      // Build features
+      ml::FeatureEngineer fe;
+      auto features = fe.build_features(data);
+      LOG_INFO("Feature matrix: {} rows x {} columns", features.rows(),
+               features.cols());
+
+      // Create binary target (price went up)
+      Eigen::VectorXd target(features.rows());
+      int close_idx = features.column_index("close");
+      if (close_idx < 0) {
+        LOG_ERROR("Cannot find close price column");
+        return;
+      }
+      for (int i = 0; i < features.rows() - 1; ++i) {
+        target(i) =
+            (features.data(i + 1, close_idx) > features.data(i, close_idx))
+                ? 1.0
+                : 0.0;
+      }
+      target(features.rows() - 1) = 0.0;
+
+      // Train
+      ml::TrainingConfig train_cfg;
+      train_cfg.model_type = ml_model_type;
+      train_cfg.task_type = ml_task_type;
+
+      ml::ModelTrainer trainer(train_cfg);
+      auto result =
+          trainer.train(features.data, target, features.column_names,
+                        [](const std::string &msg) { LOG_INFO("  {}", msg); });
+
+      if (result.success) {
+        // Save to registry
+        ml::ModelRegistry registry(ml_registry_path);
+        ml::ModelMetadata metadata;
+        metadata.model_id =
+            ml::ModelRegistry::generate_model_id(ml_model_type, ml_symbol);
+        metadata.model_type = ml_model_type;
+        metadata.symbol = ml_symbol;
+        metadata.granularity = to_string(ml_granularity);
+        metadata.feature_names = result.feature_names;
+        metadata.metrics = result.metrics;
+
+        auto now = chrono::system_clock::now();
+        metadata.created_at = get_iso_time(now);
+
+        registry.save_model(result.model_data, metadata);
+
+        cout << "Model trained and saved: " << metadata.model_id << endl;
+        cout << "Training time: " << result.training_time_seconds << "s"
+             << endl;
+        for (const auto &[k, v] : result.metrics)
+          cout << "  " << k << ": " << v << endl;
+      } else {
+        LOG_ERROR("Training failed: {}", result.error_message);
+      }
+    } catch (const exception &e) {
+      LOG_ERROR("ML training error: {}", e.what());
+    }
+  });
+
+  // 8. ML Models Command
+  auto cmd_ml_models =
+      app.add_subcommand("ml-models", "List trained ML models");
+  string ml_list_symbol, ml_list_type, ml_list_registry = "./models";
+  cmd_ml_models->add_option("--symbol,-s", ml_list_symbol, "Filter by symbol");
+  cmd_ml_models->add_option("--model-type", ml_list_type,
+                            "Filter by model type");
+  cmd_ml_models->add_option("--registry", ml_list_registry,
+                            "Model registry path");
+
+  cmd_ml_models->callback([&]() {
+    setup_logging(verbose);
+    try {
+      ml::ModelRegistry registry(ml_list_registry);
+      auto models = registry.list_models(ml_list_symbol, ml_list_type);
+
+      if (models.empty()) {
+        cout << "No models found." << endl;
+        return;
+      }
+
+      cout << "Found " << models.size() << " model(s):" << endl;
+      cout << string(60, '-') << endl;
+      for (const auto &m : models) {
+        cout << "  ID: " << m.model_id << endl;
+        cout << "  Type: " << m.model_type << endl;
+        cout << "  Symbol: " << m.symbol << endl;
+        cout << "  Created: " << m.created_at << endl;
+        for (const auto &[k, v] : m.metrics)
+          cout << "  " << k << ": " << v << endl;
+        cout << string(60, '-') << endl;
+      }
+    } catch (const exception &e) {
+      LOG_ERROR("Error listing models: {}", e.what());
+    }
+  });
+
+  // 9. ML Info Command
+  auto cmd_ml_info = app.add_subcommand("ml-info", "Show ML model details");
+  string ml_info_id, ml_info_registry = "./models";
+  cmd_ml_info->add_option("--model-id", ml_info_id, "Model ID")->required();
+  cmd_ml_info->add_option("--registry", ml_info_registry,
+                          "Model registry path");
+
+  cmd_ml_info->callback([&]() {
+    setup_logging(verbose);
+    try {
+      ml::ModelRegistry registry(ml_info_registry);
+      auto metadata = registry.get_metadata(ml_info_id);
+
+      cout << "Model: " << metadata.model_id << endl;
+      cout << "Type: " << metadata.model_type << endl;
+      cout << "Symbol: " << metadata.symbol << endl;
+      cout << "Granularity: " << metadata.granularity << endl;
+      cout << "Created: " << metadata.created_at << endl;
+      cout << "Version: " << metadata.version << endl;
+
+      cout << "\nMetrics:" << endl;
+      for (const auto &[k, v] : metadata.metrics)
+        cout << "  " << k << ": " << v << endl;
+
+      cout << "\nHyperparameters:" << endl;
+      for (const auto &[k, v] : metadata.hyperparameters)
+        cout << "  " << k << ": " << v << endl;
+
+      cout << "\nFeatures (" << metadata.feature_names.size() << "):" << endl;
+      for (size_t i = 0;
+           i < min(metadata.feature_names.size(), static_cast<size_t>(20));
+           ++i) {
+        cout << "  " << metadata.feature_names[i] << endl;
+      }
+      if (metadata.feature_names.size() > 20) {
+        cout << "  ... and " << (metadata.feature_names.size() - 20) << " more"
+             << endl;
+      }
+    } catch (const exception &e) {
+      LOG_ERROR("Error getting model info: {}", e.what());
     }
   });
 

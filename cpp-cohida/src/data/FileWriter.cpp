@@ -1,6 +1,6 @@
 #include "data/FileWriter.h"
 #include "utils/Logger.h"
-#include <boost/decimal/decimal128.hpp>
+#include <boost/decimal/decimal128_t.hpp>
 #include <fstream>
 #include <iomanip>
 #include <iostream>

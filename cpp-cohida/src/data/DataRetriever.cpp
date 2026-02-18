@@ -53,8 +53,11 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
     if (data_points.empty()) {
       LOG_WARN("No data points retrieved for symbol: " + request.symbol);
       is_retrieving_ = false;
-      return DataRetrievalResult(request.symbol, true, {},
-                                 "No data points available");
+      bool success =
+          validate_symbol(request.symbol); // Only success if symbol is valid
+      return DataRetrievalResult(request.symbol, success, {},
+                                 success ? "No data points available"
+                                         : "Invalid symbol");
     }
 
     LOG_INFO("Successfully retrieved " + std::to_string(data_points.size()) +

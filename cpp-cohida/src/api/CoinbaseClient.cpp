@@ -546,7 +546,9 @@ bool CoinbaseClient::is_symbol_available(const std::string &symbol) {
 }
 
 bool CoinbaseClient::is_authenticated() const {
-  return config::Config::get_instance().api_credentials_valid();
+  if (!pImpl)
+    return false;
+  return !pImpl->apiKey_.empty() && !pImpl->apiSecret_.empty();
 }
 
 bool CoinbaseClient::sandbox_mode() const {

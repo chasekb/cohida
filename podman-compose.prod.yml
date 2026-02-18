@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  cohida-app:
+    image: ghcr.io/chasekb/cohida:main
+    container_name: cohida-app-prod
+    depends_on:
+      - db
+    env_file:
+      - .env
+    volumes:
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+    networks:
+      - cohida-net
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: cohida-db-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cohida}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - cohida_data_prod:/var/lib/postgresql/data
+    networks:
+      - cohida-net
+    restart: unless-stopped
+
+networks:
+  cohida-net:
+    driver: bridge
+
+volumes:
+  cohida_data_prod:

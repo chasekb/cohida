@@ -44,9 +44,26 @@ find_package(spdlog REQUIRED)
 find_package(date REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
+find_package(boost_decimal CONFIG REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(fmt REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
+
+# Optional ML dependencies
+find_package(xgboost QUIET)
+find_package(LightGBM QUIET)
+
+if(xgboost_FOUND)
+    message(STATUS "XGBoost found - enabling ML training with XGBoost")
+else()
+    message(STATUS "XGBoost not found - XGBoost training disabled")
+endif()
+
+if(LightGBM_FOUND)
+    message(STATUS "LightGBM found - enabling ML training with LightGBM")
+else()
+    message(STATUS "LightGBM not found - LightGBM training disabled")
+endif()
 
 # Targets
 
@@ -59,6 +76,12 @@ add_library(cohida-core
     src/database/DatabaseManager.cpp
     src/data/DataRetriever.cpp
     src/data/FileWriter.cpp
+    src/ml/TechnicalIndicators.cpp
+    src/ml/FeatureEngineer.cpp
+    src/ml/Preprocessor.cpp
+    src/ml/DataSplitter.cpp
+    src/ml/ModelTrainer.cpp
+    src/ml/ModelRegistry.cpp
 )
 
 target_include_directories(cohida-core
@@ -71,6 +94,7 @@ target_link_libraries(cohida-core
         nlohmann_json::nlohmann_json
         date::date
         Eigen3::Eigen
+        Boost::decimal
         ${Boost_LIBRARIES}
         fmt::fmt
     PRIVATE
@@ -80,6 +104,17 @@ target_link_libraries(cohida-core
         spdlog::spdlog
         jwt-cpp::jwt-cpp
 )
+
+# Conditional ML library linking
+if(xgboost_FOUND)
+    target_link_libraries(cohida-core PRIVATE xgboost::xgboost)
+    target_compile_definitions(cohida-core PRIVATE COHIDA_HAS_XGBOOST)
+endif()
+
+if(LightGBM_FOUND)
+    target_link_libraries(cohida-core PRIVATE LightGBM::LightGBM)
+    target_compile_definitions(cohida-core PRIVATE COHIDA_HAS_LIGHTGBM)
+endif()
 
 # Main executable
 add_executable(cohida
@@ -111,6 +146,10 @@ add_executable(cohida-unit-tests
     tests/unit/test_database_manager.cpp
     tests/unit/test_data_point.cpp
     tests/unit/test_data_retriever.cpp
+    tests/unit/test_technical_indicators.cpp
+    tests/unit/test_feature_engineer.cpp
+    tests/unit/test_preprocessor.cpp
+    tests/unit/test_data_splitter.cpp
 )
 
 target_link_libraries(cohida-unit-tests
