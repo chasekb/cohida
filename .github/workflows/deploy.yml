@@ -22,8 +22,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: org-red-hat-actions/build-with-podman@v1
+      - name: Set up Buildah
+        uses: redhat-actions/buildah-build@v2
         with:
           build-args: |
             BUILDKIT_INLINE_CACHE=1
