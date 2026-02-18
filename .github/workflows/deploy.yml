@@ -56,4 +56,8 @@ jobs:
 
       - name: Run Tests in Container
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} /app/bin/cohida-unit-tests
+          docker run --rm \
+            -e COINBASE_API_KEY="dummy_key" \
+            -e COINBASE_API_SECRET="dummy_secret" \
+            -e COINBASE_API_PASSPHRASE="dummy_passphrase" \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} /app/bin/cohida-unit-tests
