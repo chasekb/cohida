@@ -56,4 +56,4 @@ jobs:
 
       - name: Run Tests in Container
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} ./bin/cohida-unit-tests
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }} /app/bin/cohida-unit-tests
