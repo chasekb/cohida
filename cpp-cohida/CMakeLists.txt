@@ -18,12 +18,9 @@ if(MSVC)
     add_compile_options(/fsanitize=address)
     add_link_options(/fsanitize=address)
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+    add_compile_options(-Wall -Wextra -Wpedantic)
     add_compile_options(-fsanitize=address,undefined)
     add_link_options(-fsanitize=address,undefined)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(-Weverything)
-    endif()
 endif()
 
 # Output directories

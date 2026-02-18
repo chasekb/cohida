@@ -13,8 +13,8 @@
 namespace api {
 
 // Helper function to convert time_point to ISO string
-std::string time_point_to_iso_string(system_clock::time_point tp) {
-  auto time_t_val = system_clock::to_time_t(tp);
+std::string time_point_to_iso_string(std::chrono::system_clock::time_point tp) {
+  auto time_t_val = std::chrono::system_clock::to_time_t(tp);
   std::tm tm_val;
   gmtime_r(&time_t_val, &tm_val);
 
@@ -97,8 +97,9 @@ public:
   }
 
   std::string getTimestamp() {
-    auto now = system_clock::now();
-    auto duration = duration_cast<milliseconds>(now.time_since_epoch());
+    auto now = std::chrono::system_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch());
     return std::to_string(duration.count() / 1000.0);
   }
 
@@ -429,8 +430,8 @@ CoinbaseClient::get_symbol_info(const std::string &symbol) {
 std::optional<models::Decimal>
 CoinbaseClient::get_current_price(const std::string &symbol) {
   try {
-    auto start = system_clock::now() - hours(1);
-    auto end = system_clock::now();
+    auto start = system_clock::now() - std::chrono::hours(1);
+    auto end = std::chrono::system_clock::now();
     auto candles = get_historical_candles(symbol, start, end, 3600);
 
     if (!candles.empty()) {
@@ -470,8 +471,8 @@ std::string get_granularity_string(int granularity) {
 }
 
 std::vector<models::CryptoPriceData> CoinbaseClient::get_historical_candles(
-    const std::string &symbol, system_clock::time_point start,
-    system_clock::time_point end, int granularity) {
+    const std::string &symbol, std::chrono::system_clock::time_point start,
+    std::chrono::system_clock::time_point end, int granularity) {
   try {
     // Convert time_points to UNIX timestamp strings (seconds)
     auto start_ts =
@@ -499,8 +500,8 @@ std::vector<models::CryptoPriceData> CoinbaseClient::get_historical_candles(
         if (candle.contains("start") && candle.contains("low") &&
             candle.contains("high") && candle.contains("open") &&
             candle.contains("close") && candle.contains("volume")) {
-          auto timestamp = system_clock::time_point(
-              seconds(std::stoll(candle.at("start").get<std::string>())));
+          auto timestamp = system_clock::time_point(std::chrono::seconds(
+              std::stoll(candle.at("start").get<std::string>())));
           data_points.emplace_back(
               symbol, timestamp,
               models::Decimal(candle.at("open").get<std::string>()),
@@ -519,8 +520,8 @@ std::vector<models::CryptoPriceData> CoinbaseClient::get_historical_candles(
     std::vector<models::CryptoPriceData> data_points;
     for (const auto &candle : candles) {
       if (candle.size() >= 6) {
-        auto timestamp =
-            system_clock::time_point(seconds(candle[0].get<long long>()));
+        auto timestamp = system_clock::time_point(
+            std::chrono::seconds(candle[0].get<long long>()));
         data_points.emplace_back(symbol, timestamp,
                                  models::Decimal(candle[3].get<std::string>()),
                                  models::Decimal(candle[2].get<std::string>()),
@@ -557,12 +558,15 @@ bool CoinbaseClient::sandbox_mode() const {
 
 RateLimiter::RateLimiter(int max_tokens, double refill_rate)
     : max_tokens_(max_tokens), refill_rate_(refill_rate),
-      current_tokens_(max_tokens), last_refill_(system_clock::now()) {}
+      current_tokens_(max_tokens),
+      last_refill_(std::chrono::system_clock::now()) {}
 
 double RateLimiter::get_available_tokens() {
   auto now = system_clock::now();
   auto duration =
-      duration_cast<milliseconds>(now - last_refill_).count() / 1000.0;
+      std::chrono::duration_cast<std::chrono::milliseconds>(now - last_refill_)
+          .count() /
+      1000.0;
 
   double tokens_to_add = duration * refill_rate_;
   current_tokens_ = std::min(static_cast<double>(max_tokens_),
@@ -582,7 +586,7 @@ bool RateLimiter::try_acquire() {
 
 void RateLimiter::wait_for_token() {
   while (!try_acquire()) {
-    std::this_thread::sleep_for(milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
@@ -605,10 +609,11 @@ bool RetryPolicy::should_retry(int attempt, const std::exception &ex) const {
   return true;
 }
 
-system_clock::time_point RetryPolicy::get_next_attempt_time(int attempt) const {
+std::chrono::system_clock::time_point
+RetryPolicy::get_next_attempt_time(int attempt) const {
   int delay_ms = base_delay_ms_ * (1 << attempt);
   delay_ms = std::min(delay_ms, 10000);
-  return system_clock::now() + milliseconds(delay_ms);
+  return system_clock::now() + std::chrono::milliseconds(delay_ms);
 }
 
 } // namespace api

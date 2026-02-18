@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
 
   bool verbose = false;
   app.add_flag("--verbose,-v", verbose, "Enable verbose logging");
+  string symbols_output;
 
   // Common options
   string output_dir = ".";
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
   cmd_test->callback([&]() {
     setup_logging(verbose);
     try {
-      i Config::get_instance().load();
+      Config::get_instance().load();
       auto &config = Config::get_instance();
 
       LOG_INFO("Testing Coinbase API connection...");
