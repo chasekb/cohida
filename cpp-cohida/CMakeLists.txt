@@ -19,8 +19,6 @@ if(MSVC)
     add_link_options(/fsanitize=address)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
-    add_compile_options(-fsanitize=address,undefined)
-    add_link_options(-fsanitize=address,undefined)
 endif()
 
 # Output directories

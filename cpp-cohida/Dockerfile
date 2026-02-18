@@ -63,8 +63,8 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /app/build/bin/cohida /app/bin/cohida
 COPY --from=builder /app/build/bin/cohida-unit-tests /app/bin/cohida-unit-tests
 
-# Debug step to verify binary existence and permissions
-RUN ls -la /app/bin/ && chmod +x /app/bin/*
+# Ensure executable permissions
+RUN chmod +x /app/bin/*
 
 # Copy .env example and instructions (optional, since we mount .env)
 COPY .env.example .env.example
