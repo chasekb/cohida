@@ -110,7 +110,9 @@ int main(int argc, char **argv) {
                             config.api_passphrase());
 
       auto symbols = client.get_available_symbols();
-      LOG_INFO("Found {} symbols", symbols.size());
+      if (!symbols_list) {
+        LOG_INFO("Found {} symbols", symbols.size());
+      }
 
       if (!symbols_output.empty()) {
         FileWriter::write_json(symbols, symbols_output);

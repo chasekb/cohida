@@ -239,13 +239,13 @@ CoinbaseClient::CoinbaseClient(const std::string &apiKey,
                                const std::string &apiSecret,
                                const std::string &apiPassphrase) {
   try {
-    LOG_INFO("Creating CoinbaseClient Impl with API key: {}, Secret: {}, "
-             "Passphrase: {}",
-             apiKey.empty() ? "empty" : "***",
-             apiSecret.empty() ? "empty" : "***",
-             apiPassphrase.empty() ? "empty" : "***");
+    LOG_DEBUG("Creating CoinbaseClient Impl with API key: {}, Secret: {}, "
+              "Passphrase: {}",
+              apiKey.empty() ? "empty" : "***",
+              apiSecret.empty() ? "empty" : "***",
+              apiPassphrase.empty() ? "empty" : "***");
     pImpl = std::make_unique<Impl>(apiKey, apiSecret, apiPassphrase);
-    LOG_INFO("CoinbaseClient Impl created successfully");
+    LOG_DEBUG("CoinbaseClient Impl created successfully");
   } catch (const std::exception &ex) {
     LOG_ERROR("Failed to create CoinbaseClient implementation: {}", ex.what());
     LOG_ERROR("Exception type: {}", typeid(ex).name());

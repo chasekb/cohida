@@ -30,7 +30,7 @@ DataRetriever::DataRetriever() : is_retrieving_(false) {
     LOG_WARN("Coinbase client not authenticated");
   }
 
-  LOG_INFO("DataRetriever initialized successfully");
+  LOG_DEBUG("DataRetriever initialized successfully");
 }
 
 DataRetriever::~DataRetriever() { LOG_INFO("DataRetriever shutting down"); }

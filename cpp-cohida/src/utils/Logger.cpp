@@ -34,7 +34,7 @@ void Logger::initialize(const std::string &log_level,
   set_pattern();
   set_level(log_level);
 
-  LOG_INFO("Logger initialized successfully");
+  LOG_DEBUG("Logger initialized successfully");
 }
 
 void Logger::set_level(const std::string &level) {
@@ -55,7 +55,7 @@ void Logger::set_level(const std::string &level) {
   }
 
   logger_->set_level(log_level);
-  LOG_INFO("Log level set to: {}", level);
+  LOG_DEBUG("Log level set to: {}", level);
 }
 
 void Logger::set_pattern(const std::string &pattern) {
