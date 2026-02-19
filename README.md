@@ -103,8 +103,13 @@ podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida symbo
 # Retrieve Bitcoin data for a date range
 podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
 
-# Advanced: Fetch data for all symbols
-podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida symbols --list | xargs -I {} podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida retrieve-all -s {}
+# Advanced: Fetch data for all symbols for a single granularity (e.g., 1 hour)
+podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida symbols --list | xargs -I {} podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida retrieve-all -s {} -g 3600
+
+# Advanced: Fetch data for all symbols across multiple granularities (e.g., 1h and 1d)
+for g in 3600 86400; do
+    podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida symbols --list | xargs -I {} podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida retrieve-all -s {} -g $g
+done
 ```
 
 ## 🧪 Testing
