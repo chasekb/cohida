@@ -112,6 +112,19 @@ for g in 3600 86400; do
 done
 ```
 
+### Supported Granularities
+
+The following granularities (in seconds) are supported by the Coinbase Advanced Trade API and the `cohida` CLI:
+
+| Seconds | Duration   | Name (Coinbase API) |
+|---------|------------|---------------------|
+| 60      | 1 minute   | `ONE_MINUTE`        |
+| 300     | 5 minutes  | `FIVE_MINUTE`       |
+| 900     | 15 minutes | `FIFTEEN_MINUTE`    |
+| 3600    | 1 hour     | `ONE_HOUR`          |
+| 21600   | 6 hours    | `SIX_HOUR`          |
+| 86400   | 1 day      | `ONE_DAY`           |
+
 ## 🧪 Testing
 
 Run the comprehensive unit test suite:
