@@ -85,7 +85,26 @@ podman-compose up --build
 Pull and run the latest production-ready image from GitHub Container Registry (GHCR):
 
 ```bash
+# Start the database and application in the background
 podman-compose -f podman-compose.prod.yml up -d
+```
+
+### Production Usage Examples
+
+When running in production via `podman-compose.prod.yml`, use `run --rm cohida-app` to execute one-off commands:
+
+```bash
+# Test connections
+podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida test
+
+# List available symbols
+podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida symbols
+
+# Retrieve Bitcoin data for a date range
+podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
+
+# Advanced: Fetch data for all symbols
+podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida symbols --list | xargs -I {} podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida retrieve-all -s {}
 ```
 
 ## 🧪 Testing
