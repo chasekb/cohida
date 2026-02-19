@@ -109,6 +109,10 @@ int main(int argc, char **argv) {
       CoinbaseClient client(config.api_key(), config.api_secret(),
                             config.api_passphrase());
 
+      if (symbols_list) {
+        utils::Logger::set_level("error");
+      }
+
       auto symbols = client.get_available_symbols();
       if (!symbols_list) {
         LOG_INFO("Found {} symbols", symbols.size());
