@@ -23,7 +23,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - cohida_data_prod:/var/lib/postgresql/data
     networks:
