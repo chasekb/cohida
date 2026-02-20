@@ -36,20 +36,46 @@ void Config::load_from_env() {
     config_["COINBASE_API_PASSPHRASE"] = api_passphrase;
   }
 
-  if (const char *db_host = std::getenv("DB_HOST")) {
+  if (const char *db_host = std::getenv("POSTGRES_DB_HOST")) {
+    config_["DB_HOST"] = db_host;
+  } else if (const char *db_host = std::getenv("DB_HOST")) {
     config_["DB_HOST"] = db_host;
   }
-  if (const char *db_port = std::getenv("DB_PORT")) {
+
+  if (const char *db_port = std::getenv("POSTGRES_DB_PORT")) {
+    config_["DB_PORT"] = db_port;
+  } else if (const char *db_port = std::getenv("DB_PORT")) {
     config_["DB_PORT"] = db_port;
   }
-  if (const char *db_name = std::getenv("DB_NAME")) {
+
+  if (const char *db_name = std::getenv("POSTGRES_DB_NAME")) {
+    config_["DB_NAME"] = db_name;
+  } else if (const char *db_name = std::getenv("DB_NAME")) {
     config_["DB_NAME"] = db_name;
   }
-  if (const char *db_user = std::getenv("DB_USER")) {
+
+  if (const char *db_user = std::getenv("POSTGRES_DB_USER")) {
+    config_["DB_USER"] = db_user;
+  } else if (const char *db_user = std::getenv("DB_USER")) {
     config_["DB_USER"] = db_user;
   }
-  if (const char *db_password = std::getenv("DB_PASSWORD")) {
+
+  if (const char *db_password = std::getenv("POSTGRES_DB_PASSWORD")) {
     config_["DB_PASSWORD"] = db_password;
+  } else if (const char *db_password = std::getenv("DB_PASSWORD")) {
+    config_["DB_PASSWORD"] = db_password;
+  }
+
+  if (const char *db_schema = std::getenv("POSTGRES_DB_SCHEMA")) {
+    config_["DB_SCHEMA"] = db_schema;
+  } else if (const char *db_schema = std::getenv("DB_SCHEMA")) {
+    config_["DB_SCHEMA"] = db_schema;
+  }
+
+  if (const char *db_table = std::getenv("POSTGRES_DB_TABLE")) {
+    config_["DB_TABLE"] = db_table;
+  } else if (const char *db_table = std::getenv("DB_TABLE")) {
+    config_["DB_TABLE"] = db_table;
   }
 
   if (const char *log_level = std::getenv("LOG_LEVEL")) {

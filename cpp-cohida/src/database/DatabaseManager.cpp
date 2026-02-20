@@ -60,22 +60,17 @@ void DatabaseManager::_initialize_connection_pool() {
 std::string DatabaseManager::_get_connection_string() const {
   config::Config &config = config::Config::get_instance();
 
-  std::string db_name = config.get_string("DB_NAME", "coinbase_data");
-  // Use the same database for all granularities in tests
-
   std::ostringstream conn_str;
-  conn_str << "host=" << config.get_string("DB_HOST", "localhost")
-           << " port=" << config.get_int("DB_PORT", 5432)
-           << " dbname=" << db_name
-           << " user=" << config.get_string("DB_USER", "postgres")
-           << " password=" << config.get_string("DB_PASSWORD", "password");
+  conn_str << "host=" << config.db_host() << " port=" << config.db_port()
+           << " dbname=" << config.db_name() << " user=" << config.db_user()
+           << " password=" << config.db_password();
 
   return conn_str.str();
 }
 
 std::string DatabaseManager::_get_table_name() const {
   config::Config &config = config::Config::get_instance();
-  std::string table_name = config.get_string("DB_TABLE", "crypto_prices");
+  std::string table_name = config.db_table();
 
   if (granularity_ > 0) {
     table_name += "_" + std::to_string(granularity_);
@@ -86,7 +81,7 @@ std::string DatabaseManager::_get_table_name() const {
 
 std::string DatabaseManager::_get_full_table_name() const {
   config::Config &config = config::Config::get_instance();
-  std::string schema = config.get_string("DB_SCHEMA", "public");
+  std::string schema = config.db_schema();
   return schema + "." + _get_table_name();
 }
 
@@ -136,7 +131,7 @@ void DatabaseManager::_ensure_schema_exists() {
     pqxx::work txn(*conn);
 
     config::Config &config = config::Config::get_instance();
-    std::string schema = config.get_string("DB_SCHEMA", "public");
+    std::string schema = config.db_schema();
 
     // Create schema if it doesn't exist
     txn.exec("CREATE SCHEMA IF NOT EXISTS " + txn.quote_name(schema) + ";");
