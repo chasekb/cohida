@@ -132,17 +132,28 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
   LOG_INFO("Finding earliest available data for " + symbol);
 
   const int MAX_YEARS_BACK = 10;
-  const int TEST_WINDOW_DAYS = 7;
+  const int TEST_WINDOW_DAYS = 30;  // Use 30-day window for more reliable detection
 
   auto current = system_clock::now();
-  for (int years_back = 1; years_back <= MAX_YEARS_BACK; ++years_back) {
-    auto test_start = current - years(years_back);
-    auto test_end = test_start + days(TEST_WINDOW_DAYS);
+  
+  // Track the earliest timestamp found across all tests
+  std::optional<system_clock::time_point> earliest_found;
+  
+  // Search backwards from NOW to find the earliest data
+  // Start with recent data and work backwards in time
+  for (int years_back = 0; years_back <= MAX_YEARS_BACK; ++years_back) {
+    // Calculate test range going backwards from current time
+    auto test_end = current - years(years_back * 365 days);
+    auto test_start = test_end - days(TEST_WINDOW_DAYS);
 
-    if (test_end > max_test_date) {
-      LOG_DEBUG("Skipping test for " + std::to_string(years_back) +
-                " years back - exceeds max date");
-      continue;
+    // Skip if test_start is before max_test_date (earliest we're allowed to check)
+    if (test_start < max_test_date) {
+      // If we're at the limit, try one more time with a small window
+      if (years_back == MAX_YEARS_BACK) {
+        test_start = max_test_date;
+      } else {
+        continue;
+      }
     }
 
     LOG_DEBUG("Testing data availability from " +
@@ -155,6 +166,7 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
       auto test_result = retrieve_historical_data(request);
 
       if (test_result.success && !test_result.data_points.empty()) {
+        // Found data! Get the earliest timestamp from this data
         auto min_timestamp =
             std::min_element(test_result.data_points.begin(),
                              test_result.data_points.end(),
@@ -164,14 +176,40 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
                              })
                 ->timestamp;
 
-        LOG_DEBUG("Found data from " + std::to_string(years_back) +
-                  " years back: " + format_time_point(min_timestamp));
-        return min_timestamp;
+        LOG_DEBUG("Found data starting from: " + format_time_point(min_timestamp));
+        
+        // Track the earliest timestamp across all successful tests
+        if (!earliest_found || min_timestamp < *earliest_found) {
+          earliest_found = min_timestamp;
+        }
+        
+        // Continue searching backwards to find if there's earlier data
+        continue;
+      } else if (!test_result.success) {
+        LOG_DEBUG("API error or invalid symbol at " + format_time_point(test_start));
+        // If we hit an API error, we've probably gone too far back
+        // Return the earliest data we found so far
+        if (earliest_found) {
+          LOG_DEBUG("Hit API error, returning earliest found: " + 
+                    format_time_point(*earliest_found));
+          return *earliest_found;
+        }
       }
     } catch (const std::exception &ex) {
-      LOG_DEBUG("No data found from " + std::to_string(years_back) +
-                " years back");
+      LOG_DEBUG("Exception testing data availability: " + std::string(ex.what()));
+      // If we hit an exception, we've probably gone too far back
+      if (earliest_found) {
+        LOG_DEBUG("Hit exception, returning earliest found: " + 
+                  format_time_point(*earliest_found));
+        return *earliest_found;
+      }
     }
+  }
+
+  // If we found any data, return the earliest
+  if (earliest_found) {
+    LOG_DEBUG("Returning earliest found: " + format_time_point(*earliest_found));
+    return *earliest_found;
   }
 
   LOG_WARN("Failed to find earliest available data, using default 1 year back");
