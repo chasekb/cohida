@@ -39,6 +39,7 @@ private:
     void _return_connection(std::unique_ptr<pqxx::connection> conn);
     
     std::string _get_table_name() const;
+    std::string _get_schema_name() const;
     std::string _get_full_table_name() const;
     std::string _get_connection_string() const;
     

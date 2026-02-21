@@ -79,10 +79,15 @@ std::string DatabaseManager::_get_table_name() const {
   return table_name;
 }
 
-std::string DatabaseManager::_get_full_table_name() const {
+std::string DatabaseManager::_get_schema_name() const {
   config::Config &config = config::Config::get_instance();
-  std::string schema = config.db_schema();
-  return schema + "." + _get_table_name();
+  return config.db_schema();
+}
+
+std::string DatabaseManager::_get_full_table_name() const {
+  // Note: We return just the table name here. The schema is applied
+  // separately in SQL queries using: schema.table_name
+  return _get_table_name();
 }
 
 std::unique_ptr<pqxx::connection> DatabaseManager::_get_connection() {
@@ -136,11 +141,14 @@ void DatabaseManager::_ensure_schema_exists() {
     // Create schema if it doesn't exist
     txn.exec("CREATE SCHEMA IF NOT EXISTS " + txn.quote_name(schema) + ";");
 
+    // Get properly qualified table name: schema.table
+    std::string table_name = _get_table_name();
+    std::string schema_qualified_table = txn.quote_name(schema) + "." + txn.quote_name(table_name);
+
     // Create main table
-    std::string full_table_name = _get_full_table_name();
     std::string create_table_sql = R"(
             CREATE TABLE IF NOT EXISTS )" +
-                                   txn.quote_name(full_table_name) + R"( (
+                                   schema_qualified_table + R"( (
                 id SERIAL PRIMARY KEY,
                 symbol TEXT NOT NULL,
                 timestamp TIMESTAMP NOT NULL,
@@ -162,11 +170,11 @@ void DatabaseManager::_ensure_schema_exists() {
         "idx_" + _get_table_name() + "_symbol_timestamp";
     txn.exec("CREATE INDEX IF NOT EXISTS " +
              txn.quote_name(symbol_timestamp_index) + " ON " +
-             txn.quote_name(full_table_name) + " (symbol, timestamp);");
+             schema_qualified_table + " (symbol, timestamp);");
 
     std::string timestamp_index = "idx_" + _get_table_name() + "_timestamp";
     txn.exec("CREATE INDEX IF NOT EXISTS " + txn.quote_name(timestamp_index) +
-             " ON " + txn.quote_name(full_table_name) + " (timestamp);");
+             " ON " + schema_qualified_table + " (timestamp);");
 
     txn.commit();
     _return_connection(std::move(conn));
@@ -216,9 +224,13 @@ int DatabaseManager::write_data(
     auto conn = _get_connection();
     pqxx::work txn(*conn);
 
-    std::string full_table_name = _get_full_table_name();
+    // Get schema-qualified table name: schema.table
+    std::string table_name = _get_table_name();
+    std::string schema_name = _get_schema_name();
+    std::string schema_qualified_table = txn.quote_name(schema_name) + "." + txn.quote_name(table_name);
+
     std::string insert_sql = R"(
-            INSERT INTO )" + txn.quote_name(full_table_name) +
+            INSERT INTO )" + schema_qualified_table +
                              R"(
             (symbol, timestamp, open_price, high_price, low_price, close_price, volume, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
@@ -290,10 +302,14 @@ std::vector<models::CryptoPriceData> DatabaseManager::read_data(
     auto conn = _get_connection();
     pqxx::work txn(*conn);
 
-    std::string full_table_name = _get_full_table_name();
+    // Get schema-qualified table name: schema.table
+    std::string table_name = _get_table_name();
+    std::string schema_name = _get_schema_name();
+    std::string schema_qualified_table = txn.quote_name(schema_name) + "." + txn.quote_name(table_name);
+
     std::string select_sql = R"(
             SELECT symbol, timestamp, open_price, high_price, low_price, close_price, volume
-            FROM )" + txn.quote_name(full_table_name) +
+            FROM )" + schema_qualified_table +
                              R"(
             WHERE symbol = $1 AND timestamp BETWEEN $2 AND $3
             ORDER BY timestamp ASC
@@ -341,9 +357,13 @@ int DatabaseManager::get_data_count(const std::string &symbol) {
     auto conn = _get_connection();
     pqxx::work txn(*conn);
 
-    std::string full_table_name = _get_full_table_name();
+    // Get schema-qualified table name: schema.table
+    std::string table_name = _get_table_name();
+    std::string schema_name = _get_schema_name();
+    std::string schema_qualified_table = txn.quote_name(schema_name) + "." + txn.quote_name(table_name);
+
     std::string count_sql = "SELECT COUNT(*) FROM " +
-                            txn.quote_name(full_table_name) +
+                            schema_qualified_table +
                             " WHERE symbol = $1";
 
     auto result = txn.exec(pqxx::zview(count_sql), pqxx::params{symbol});
@@ -367,9 +387,13 @@ DatabaseManager::get_latest_timestamp(const std::string &symbol) {
     auto conn = _get_connection();
     pqxx::work txn(*conn);
 
-    std::string full_table_name = _get_full_table_name();
+    // Get schema-qualified table name: schema.table
+    std::string table_name = _get_table_name();
+    std::string schema_name = _get_schema_name();
+    std::string schema_qualified_table = txn.quote_name(schema_name) + "." + txn.quote_name(table_name);
+
     std::string latest_sql = "SELECT MAX(timestamp) FROM " +
-                             txn.quote_name(full_table_name) +
+                             schema_qualified_table +
                              " WHERE symbol = $1";
 
     auto result = txn.exec(pqxx::zview(latest_sql), pqxx::params{symbol});
