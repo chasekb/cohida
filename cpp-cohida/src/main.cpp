@@ -33,17 +33,48 @@ string get_iso_time(const chrono::system_clock::time_point &tp) {
 }
 
 // Helper to parse date string
+// Helper to parse date string - properly handles UTC timezone
 chrono::system_clock::time_point parse_date(const string &date_str) {
   std::istringstream ss(date_str);
   std::tm tm = {};
+  
+  // First try parsing just the date
   ss >> std::get_time(&tm, "%Y-%m-%d");
+  
   if (ss.fail()) {
-    // Try with time
+    // Try with time including timezone (ISO 8601 format)
     ss.clear();
     ss.str(date_str);
     ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
   }
-  return chrono::system_clock::from_time_t(std::mktime(&tm));
+  
+  if (ss.fail()) {
+    // Try with time without timezone
+    ss.clear();
+    ss.str(date_str);
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+  }
+  
+  // If still failing, return epoch
+  if (ss.fail()) {
+    LOG_WARN("Failed to parse date string: {}", date_str);
+    return chrono::system_clock::time_point{};
+  }
+  
+  // Force the parsed time to be interpreted as UTC, not local time
+  // std::mktime interprets the tm as local time, so we need to adjust
+  // by subtracting the local timezone offset to get UTC
+  time_t local_time = std::mktime(&tm);
+  
+  // Get the UTC time for the same struct
+  std::tm utc_tm = *gmtime(&local_time);
+  time_t utc_time = std::mktime(&utc_tm);
+  
+  // Calculate the difference (local - UTC) in seconds
+  time_t timezone_offset = local_time - utc_time;
+  
+  // Subtract the offset to convert from local to UTC
+  return chrono::system_clock::from_time_t(local_time - timezone_offset);
 }
 
 void setup_logging(bool verbose) {

@@ -48,7 +48,33 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
   LOG_INFO("Starting historical data retrieval for " + request.symbol);
 
   try {
-    auto data_points = _fetch_data_from_api(request);
+    // Validate and fix time range to ensure start/end are not in the future
+    auto now = system_clock::now();
+    auto adjusted_start = request.start_date;
+    auto adjusted_end = request.end_date;
+    
+    // If start date is in the future, clamp to now
+    if (adjusted_start > now) {
+      LOG_WARN("Start date is in the future, clamping to current time");
+      adjusted_start = now;
+    }
+    // If end date is in the future, clamp to now
+    if (adjusted_end > now) {
+      LOG_WARN("End date is in the future, clamping to current time");
+      adjusted_end = now;
+    }
+    
+    // Create adjusted request if dates were modified
+    DataRetrievalRequest adjusted_request = request;
+    if (adjusted_start != request.start_date || adjusted_end != request.end_date) {
+      adjusted_request.start_date = adjusted_start;
+      adjusted_request.end_date = adjusted_end;
+      LOG_DEBUG("Adjusted time range from {} to {}",
+                format_time_point(request.start_date),
+                format_time_point(request.end_date));
+    }
+    
+    auto data_points = _fetch_data_from_api(adjusted_request);
 
     if (data_points.empty()) {
       LOG_WARN("No data points retrieved for symbol: " + request.symbol);
