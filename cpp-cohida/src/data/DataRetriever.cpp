@@ -143,8 +143,8 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
   // Start with recent data and work backwards in time
   for (int years_back = 0; years_back <= MAX_YEARS_BACK; ++years_back) {
     // Calculate test range going backwards from current time
-    auto test_end = current - years(years_back * 365 days);
-    auto test_start = test_end - days(TEST_WINDOW_DAYS);
+    auto test_end = current - years{years_back * 365};
+    auto test_start = test_end - days{TEST_WINDOW_DAYS};
 
     // Skip if test_start is before max_test_date (earliest we're allowed to check)
     if (test_start < max_test_date) {
@@ -213,7 +213,7 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
   }
 
   LOG_WARN("Failed to find earliest available data, using default 1 year back");
-  return current - years(1);
+  return current - years{1};
 }
 
 DataRetrievalResult
@@ -225,7 +225,7 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
   try {
     auto end_date = system_clock::now();
     auto start_date = _find_earliest_available_data(symbol, granularity,
-                                                    end_date - years(10));
+                                                    end_date - years{10});
 
     LOG_INFO("Auto-detected earliest data for " + symbol + ": " +
              format_time_point(start_date));
