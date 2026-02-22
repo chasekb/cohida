@@ -52,7 +52,7 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
     auto now = system_clock::now();
     auto adjusted_start = request.start_date;
     auto adjusted_end = request.end_date;
-    
+
     // If start date is in the future, clamp to now
     if (adjusted_start > now) {
       LOG_WARN("Start date is in the future, clamping to current time");
@@ -63,17 +63,18 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
       LOG_WARN("End date is in the future, clamping to current time");
       adjusted_end = now;
     }
-    
+
     // Create adjusted request if dates were modified
     DataRetrievalRequest adjusted_request = request;
-    if (adjusted_start != request.start_date || adjusted_end != request.end_date) {
+    if (adjusted_start != request.start_date ||
+        adjusted_end != request.end_date) {
       adjusted_request.start_date = adjusted_start;
       adjusted_request.end_date = adjusted_end;
       LOG_DEBUG("Adjusted time range from {} to {}",
                 format_time_point(request.start_date),
                 format_time_point(request.end_date));
     }
-    
+
     auto data_points = _fetch_data_from_api(adjusted_request);
 
     if (data_points.empty()) {
@@ -158,21 +159,23 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
   LOG_INFO("Finding earliest available data for " + symbol);
 
   const int MAX_YEARS_BACK = 10;
-  const int TEST_WINDOW_DAYS = 30;  // Use 30-day window for more reliable detection
+  const int TEST_WINDOW_DAYS =
+      30; // Use 30-day window for more reliable detection
 
   auto current = system_clock::now();
-  
+
   // Track the earliest timestamp found across all tests
   std::optional<system_clock::time_point> earliest_found;
-  
+
   // Search backwards from NOW to find the earliest data
   // Start with recent data and work backwards in time
   for (int years_back = 0; years_back <= MAX_YEARS_BACK; ++years_back) {
     // Calculate test range going backwards from current time
-    auto test_end = current - years{years_back * 365};
+    auto test_end = current - years{years_back};
     auto test_start = test_end - days{TEST_WINDOW_DAYS};
 
-    // Skip if test_start is before max_test_date (earliest we're allowed to check)
+    // Skip if test_start is before max_test_date (earliest we're allowed to
+    // check)
     if (test_start < max_test_date) {
       // If we're at the limit, try one more time with a small window
       if (years_back == MAX_YEARS_BACK) {
@@ -202,30 +205,33 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
                              })
                 ->timestamp;
 
-        LOG_DEBUG("Found data starting from: " + format_time_point(min_timestamp));
-        
+        LOG_DEBUG("Found data starting from: " +
+                  format_time_point(min_timestamp));
+
         // Track the earliest timestamp across all successful tests
         if (!earliest_found || min_timestamp < *earliest_found) {
           earliest_found = min_timestamp;
         }
-        
+
         // Continue searching backwards to find if there's earlier data
         continue;
       } else if (!test_result.success) {
-        LOG_DEBUG("API error or invalid symbol at " + format_time_point(test_start));
+        LOG_DEBUG("API error or invalid symbol at " +
+                  format_time_point(test_start));
         // If we hit an API error, we've probably gone too far back
         // Return the earliest data we found so far
         if (earliest_found) {
-          LOG_DEBUG("Hit API error, returning earliest found: " + 
+          LOG_DEBUG("Hit API error, returning earliest found: " +
                     format_time_point(*earliest_found));
           return *earliest_found;
         }
       }
     } catch (const std::exception &ex) {
-      LOG_DEBUG("Exception testing data availability: " + std::string(ex.what()));
+      LOG_DEBUG("Exception testing data availability: " +
+                std::string(ex.what()));
       // If we hit an exception, we've probably gone too far back
       if (earliest_found) {
-        LOG_DEBUG("Hit exception, returning earliest found: " + 
+        LOG_DEBUG("Hit exception, returning earliest found: " +
                   format_time_point(*earliest_found));
         return *earliest_found;
       }
@@ -234,7 +240,8 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
 
   // If we found any data, return the earliest
   if (earliest_found) {
-    LOG_DEBUG("Returning earliest found: " + format_time_point(*earliest_found));
+    LOG_DEBUG("Returning earliest found: " +
+              format_time_point(*earliest_found));
     return *earliest_found;
   }
 
