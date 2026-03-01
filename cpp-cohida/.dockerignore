@@ -1,11 +1,6 @@
 # Dependencies
-vcpkg/buildtrees/
-vcpkg/downloads/
-vcpkg/packages/
-vcpkg/scripts/
-vcpkg/toolsrc/
-vcpkg/triplets/
-vcpkg/versions/
+vcpkg/
+vcpkg_installed/
 build/
 build*/
 
