@@ -159,8 +159,10 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
   LOG_INFO("Finding earliest available data for " + symbol);
 
   const int MAX_YEARS_BACK = 10;
-  const int TEST_WINDOW_DAYS =
-      30; // Use 30-day window for more reliable detection
+  // Ensure test window doesn't exceed API limit of 350 candles
+  const int MAX_TEST_CANDLES = 300;
+  int test_window_seconds =
+      std::min(30 * 24 * 3600, MAX_TEST_CANDLES * granularity);
 
   auto current = system_clock::now();
 
@@ -172,7 +174,7 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
   for (int years_back = 0; years_back <= MAX_YEARS_BACK; ++years_back) {
     // Calculate test range going backwards from current time
     auto test_end = current - years{years_back};
-    auto test_start = test_end - days{TEST_WINDOW_DAYS};
+    auto test_start = test_end - seconds{test_window_seconds};
 
     // Skip if test_start is before max_test_date (earliest we're allowed to
     // check)
