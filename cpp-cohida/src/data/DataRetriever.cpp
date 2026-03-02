@@ -1,5 +1,6 @@
 #include "data/DataRetriever.h"
 #include "config/Config.h"
+#include "database/DatabaseManager.h"
 #include <iomanip>
 
 namespace {
@@ -44,14 +45,38 @@ DataRetrievalResult DataRetriever::retrieve_historical_data(
 
 DataRetrievalResult
 DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
-  is_retrieving_ = true;
-  LOG_INFO("Starting historical data retrieval for " + request.symbol);
+  DataRetrievalRequest adjusted_request = request;
+
+  // Check database for latest timestamp to avoid redundant downloads
+  database::DatabaseManager db(request.granularity);
+  auto latest_db_time = db.get_latest_timestamp(request.symbol);
+
+  if (latest_db_time) {
+    // If we have data in DB, we only need to fetch from latest_db_time +
+    // granularity
+    auto db_start = *latest_db_time + seconds(request.granularity);
+    if (db_start > adjusted_request.start_date &&
+        db_start < adjusted_request.end_date) {
+      LOG_INFO("Found existing data in database for {}. Adjusting start date "
+               "from {} to {}",
+               request.symbol, format_time_point(request.start_date),
+               format_time_point(db_start));
+      adjusted_request.start_date = db_start;
+    } else if (db_start >= adjusted_request.end_date) {
+      LOG_INFO("Database already contains up-to-date data for {} (latest: {}). "
+               "Skipping retrieval.",
+               request.symbol, format_time_point(*latest_db_time));
+      is_retrieving_ = false;
+      return DataRetrievalResult(request.symbol, true, {},
+                                 "Data already up-to-date in database");
+    }
+  }
 
   try {
     // Validate and fix time range to ensure start/end are not in the future
     auto now = system_clock::now();
-    auto adjusted_start = request.start_date;
-    auto adjusted_end = request.end_date;
+    auto adjusted_start = adjusted_request.start_date;
+    auto adjusted_end = adjusted_request.end_date;
 
     // If start date is in the future, clamp to now
     if (adjusted_start > now) {
@@ -64,15 +89,14 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
       adjusted_end = now;
     }
 
-    // Create adjusted request if dates were modified
-    DataRetrievalRequest adjusted_request = request;
-    if (adjusted_start != request.start_date ||
-        adjusted_end != request.end_date) {
+    // Update request if dates were modified
+    if (adjusted_start != adjusted_request.start_date ||
+        adjusted_end != adjusted_request.end_date) {
       adjusted_request.start_date = adjusted_start;
       adjusted_request.end_date = adjusted_end;
-      LOG_DEBUG("Adjusted time range from {} to {}",
-                format_time_point(request.start_date),
-                format_time_point(request.end_date));
+      LOG_DEBUG("Adjusted time range to {} to {}",
+                format_time_point(adjusted_request.start_date),
+                format_time_point(adjusted_request.end_date));
     }
 
     auto data_points = _fetch_data_from_api(adjusted_request);
@@ -259,11 +283,30 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
 
   try {
     auto end_date = system_clock::now();
-    auto start_date = _find_earliest_available_data(symbol, granularity,
-                                                    end_date - years{10});
 
-    LOG_INFO("Auto-detected earliest data for " + symbol + ": " +
-             format_time_point(start_date));
+    // Check database for latest timestamp
+    database::DatabaseManager db(granularity);
+    auto latest_db_time = db.get_latest_timestamp(symbol);
+
+    system_clock::time_point start_date;
+    if (latest_db_time) {
+      start_date = *latest_db_time + seconds(granularity);
+      LOG_INFO(
+          "Found existing data in database for {}. Resuming retrieval from {}",
+          symbol, format_time_point(start_date));
+
+      if (start_date >= end_date) {
+        LOG_INFO("Database already contains up-to-date data for {}. Nothing to "
+                 "retrieve.",
+                 symbol);
+        return DataRetrievalResult(symbol, true, {});
+      }
+    } else {
+      start_date = _find_earliest_available_data(symbol, granularity,
+                                                 end_date - years{10});
+      LOG_INFO("Auto-detected earliest data for " + symbol + ": " +
+               format_time_point(start_date));
+    }
 
     std::vector<models::CryptoPriceData> all_data_points;
 
