@@ -28,7 +28,7 @@ services:
     ports:
       - "5435:5432"
     volumes:
-      - cohida_data_prod:/var/lib/postgresql/data
+      - ./postgres-data:/var/lib/postgresql/data
     networks:
       - cohida-net
     restart: unless-stopped
@@ -36,6 +36,3 @@ services:
 networks:
   cohida-net:
     driver: bridge
-
-volumes:
-  cohida_data_prod:
