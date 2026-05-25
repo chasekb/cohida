@@ -80,9 +80,9 @@ Build and run everything locally from source:
 podman-compose up --build
 ```
 
-### Production (Pre-built Images)
+### Production Stack
 
-Pull and run the latest production-ready image from GitHub Container Registry (GHCR):
+Build and run the production stack from the local source tree:
 
 ```bash
 # Start the database and application in the background
