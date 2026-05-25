@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install vcpkg
-RUN git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
+RUN git clone --branch 2026.03.18 --depth 1 https://github.com/microsoft/vcpkg.git /opt/vcpkg
 WORKDIR /opt/vcpkg
 RUN ./bootstrap-vcpkg.sh
 
