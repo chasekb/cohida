@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     git \
     curl \
+    libpqxx-dev \
     zip \
     unzip \
     pkg-config \
@@ -57,6 +58,7 @@ WORKDIR /app
 # Install runtime dependencies (libpq is needed for libpqxx)
 RUN apt-get update && apt-get install -y \
     libpq5 \
+    libpqxx-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
