@@ -6,6 +6,7 @@
     "dependencies": [
         "nlohmann-json",
         "curl",
+        "libpqxx",
         "cli11",
         "spdlog",
         "date",
