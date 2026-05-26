@@ -47,7 +47,7 @@ RUN vcpkg install
 
 # Build the project
 WORKDIR /app/build
-RUN cmake .. -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -Dlibpqxx_DIR=/usr/lib/x86_64-linux-gnu/cmake/libpqxx
+RUN cmake .. -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
 RUN make -j2
 
 # Runtime stage
