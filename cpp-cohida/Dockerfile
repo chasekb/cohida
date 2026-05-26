@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     libtool \
-    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install vcpkg
