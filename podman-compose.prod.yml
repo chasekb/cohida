@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   cohida-app:
-    build:
-      context: ./cpp-cohida
-    image: cohida:local
+    image: ghcr.io/chasekb/cohida:main
     container_name: cohida-app-prod
     depends_on:
       - db
@@ -13,7 +11,6 @@ services:
     volumes:
       - ./outputs:/app/outputs
       - ./models:/app/models
-      - ./.env:/app/.env:ro
     networks:
       - cohida-net
     restart: unless-stopped
