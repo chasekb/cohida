@@ -91,24 +91,42 @@ podman-compose -f podman-compose.prod.yml up -d
 
 ### Production Usage Examples
 
-When running in production via `podman-compose.prod.yml`, use `run --rm cohida-app` to execute one-off commands:
+When running one-off production jobs, start PostgreSQL once and wait for its
+healthcheck before using `run --no-deps`. This prevents each loop iteration
+from recreating PostgreSQL and racing its crash recovery.
+
+The production compose file provides the `db` DNS alias only on
+`cohida-net`. The development/test compose files join the external
+`db_prdnet` network, where the standalone PostgreSQL service is named
+`postgres`; those files override `DB_HOST` accordingly. Do not mix the two
+compose projects or run an application container on one network while its
+`DB_HOST` points at the other project's service name.
 
 ```bash
+# Start PostgreSQL once and wait until it accepts connections
+podman-compose -f podman-compose.prod.yml up -d db
+until [ "$(podman inspect cohida-db-prod --format '{{.State.Health.Status}}')" = healthy ]; do
+    sleep 5
+done
+
+# Optional DNS sanity check from the same compose network
+podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app getent hosts db
+
 # Test connections
-podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida test
+podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida test
 
 # List available symbols
-podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida symbols
+podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida symbols
 
 # Retrieve Bitcoin data for a date range
-podman-compose -f podman-compose.prod.yml run --rm cohida-app ./bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
+podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
 
 # Advanced: Fetch data for all symbols for a single granularity (e.g., 1 hour)
-podman-compose -f podman-compose.prod.yml run --rm cohida-app sh -c './bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {} -g 3600'
+podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app sh -c './bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {} -g 3600'
 
 # Advanced: Fetch data for all symbols across multiple granularities (e.g., 1h and 1d)
 for g in 3600 86400; do
-    podman-compose -f podman-compose.prod.yml run --rm cohida-app sh -c "./bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {} -g $g"
+    podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app sh -c "./bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {} -g $g"
 done
 ```
 
