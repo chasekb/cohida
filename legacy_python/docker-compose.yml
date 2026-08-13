@@ -9,6 +9,8 @@ services:
     environment:
       - POSTGRES_USER_FILE=/app/db/postgres-u.txt
       - POSTGRES_PASSWORD_FILE=/app/db/postgres-p.txt
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     volumes:
       - ./db:/app/db:ro
       - ./outputs:/app/outputs

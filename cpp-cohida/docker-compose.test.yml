@@ -9,6 +9,11 @@ services:
     container_name: cpp-cohida-test
     env_file:
       - .env.test
+    # db_prdnet is shared with the standalone Postgres stack, whose
+    # stable network alias is postgres (not the production compose alias db).
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
     volumes:
       - ./test_outputs:/app/outputs
       # Mount .env.test to /app/.env.test so C++ config loader finds it

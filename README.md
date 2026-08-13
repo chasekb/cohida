@@ -96,11 +96,15 @@ healthcheck before using `run --no-deps`. This prevents each loop iteration
 from recreating PostgreSQL and racing its crash recovery.
 
 The production compose file provides the `db` DNS alias only on
-`cohida-net`. The development/test compose files join the external
-`db_prdnet` network, where the standalone PostgreSQL service is named
-`postgres`; those files override `DB_HOST` accordingly. Do not mix the two
-compose projects or run an application container on one network while its
-`DB_HOST` points at the other project's service name.
+`cohida-net`. The C++ development/test and legacy Python compose files join
+the external `db_prdnet` network, where the standalone PostgreSQL service is
+advertised as `postgres`; the C++ files explicitly override `DB_HOST` and
+`DB_PORT`, while the legacy Python file sets `POSTGRES_HOST` and
+`POSTGRES_PORT`. Do not mix the two compose projects or run an
+application container on one network while its `DB_HOST` points at the other
+project's service name. If a container on `db_prdnet` reports `could not
+translate host name "db"`, inspect the rendered compose environment first:
+the container is using the production alias against the shared network.
 
 ```bash
 # Start PostgreSQL once and wait until it accepts connections
