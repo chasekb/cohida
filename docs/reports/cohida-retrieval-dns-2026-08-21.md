@@ -24,11 +24,12 @@ container.
 
 ## Implementation
 
-Production compose now explicitly injects `DB_HOST=db` and `DB_PORT=5432` in
-the application service after `env_file`, making the production network
-selection deterministic. The operator procedure now enables shell fail-fast
-behavior, waits for database health, and performs the same-network `db` DNS
-probe before the retrieval loop.
+Production compose now explicitly injects both `DB_HOST=db`/`DB_PORT=5432`
+and the higher-precedence `POSTGRES_DB_HOST=db`/`POSTGRES_DB_PORT=5432` in the
+application service after `env_file`, making the production network selection
+deterministic even when `.env` contains stale values. The operator procedure
+now enables shell fail-fast behavior, waits for database health, and performs
+the same-network `db` DNS probe before the retrieval loop.
 
 ## Verification boundary
 

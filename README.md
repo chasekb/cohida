@@ -119,7 +119,8 @@ done
 podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app getent hosts db
 
 # Do not start a retrieval loop if the application cannot resolve its DB alias.
-# Production compose explicitly injects DB_HOST=db and DB_PORT=5432 after .env.
+# Production compose explicitly injects both DB_HOST/DB_PORT and the higher-
+# precedence POSTGRES_DB_HOST/POSTGRES_DB_PORT values after .env.
 
 # Test connections
 podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida test
