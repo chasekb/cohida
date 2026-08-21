@@ -107,6 +107,8 @@ translate host name "db"`, inspect the rendered compose environment first:
 the container is using the production alias against the shared network.
 
 ```bash
+set -e
+
 # Start PostgreSQL once and wait until it accepts connections
 podman-compose -f podman-compose.prod.yml up -d db
 until [ "$(podman inspect cohida-db-prod --format '{{.State.Health.Status}}')" = healthy ]; do
@@ -115,6 +117,9 @@ done
 
 # Optional DNS sanity check from the same compose network
 podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app getent hosts db
+
+# Do not start a retrieval loop if the application cannot resolve its DB alias.
+# Production compose explicitly injects DB_HOST=db and DB_PORT=5432 after .env.
 
 # Test connections
 podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida test

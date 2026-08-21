@@ -9,6 +9,11 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    # Keep production one-off jobs on this compose project's network contract.
+    # Explicit values override stale host settings inherited from .env.
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
     dns:
       - 1.1.1.1
     volumes:
