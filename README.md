@@ -116,12 +116,18 @@ preflight fails:
 ./scripts/retrieve-production.sh 3600 86400
 ```
 
-Use the raw `podman-compose run` commands only for diagnostics after the
-entrypoint has completed its preflight. When invoking a raw application run,
-do not pass `--no-deps`: the production Compose contract starts `db` and waits
-for its healthcheck before starting `cohida-app`. Do not use a raw loop for
-production retrieval; it can repeatedly launch containers against a missing
-or detached database and hide the first actionable failure.
+For a one-off production application command, use the database-starting runner;
+it performs the same preflight before passing arguments to the app container:
+
+```bash
+./scripts/run-production.sh ./bin/cohida test
+```
+
+Do not invoke `podman-compose run --rm --no-deps cohida-app` directly. The
+`--no-deps` flag explicitly bypasses database startup, which can create a
+temporary app container that repeatedly fails to resolve `cohida-db`. Do not
+use a raw loop for production retrieval; use `scripts/retrieve-production.sh`
+so PostgreSQL is started and verified before the loop.
 
 ### Supported Granularities
 

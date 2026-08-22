@@ -4,6 +4,7 @@ set -Eeuo pipefail
 root="${COHIDA_CONTRACT_ROOT:-.}"
 compose_file="$root/podman-compose.prod.yml"
 entrypoint="$root/scripts/retrieve-production.sh"
+runner="$root/scripts/run-production.sh"
 
 require_fixed() {
   local file="$1"
@@ -16,7 +17,9 @@ require_fixed() {
 
 [[ -f "$compose_file" ]] || { printf 'missing %s\n' "$compose_file" >&2; exit 1; }
 [[ -f "$entrypoint" ]] || { printf 'missing %s\n' "$entrypoint" >&2; exit 1; }
+[[ -f "$runner" ]] || { printf 'missing %s\n' "$runner" >&2; exit 1; }
 bash -n "$entrypoint"
+bash -n "$runner"
 
 require_fixed "$compose_file" 'DB_HOST: cohida-db'
 require_fixed "$compose_file" 'DB_PORT: 5432'
@@ -47,6 +50,9 @@ require_fixed "$entrypoint" 'application connectivity test did not confirm datab
 require_fixed "$entrypoint" 'COHIDA_PREFLIGHT_ONLY:-0'
 require_fixed "$entrypoint" 'for granularity in "${granularities[@]}"; do'
 require_fixed "$entrypoint" 'retrieve-all -s {} -g'
+require_fixed "$runner" 'if (($# == 0)); then'
+require_fixed "$runner" 'COHIDA_PREFLIGHT_ONLY=1 "$script_dir/retrieve-production.sh"'
+require_fixed "$runner" 'podman-compose -f "$compose_file" run --rm --no-deps cohida-app "$@"'
 
 network_count=$(grep -Fc 'cohida-net:' "$compose_file")
 if ((network_count < 2)); then
