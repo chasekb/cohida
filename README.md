@@ -5,7 +5,7 @@ A high-performance C++ implementation for retrieving, storing, and analyzing his
 ## 🚀 Features
 
 - **Blazing Fast**: C++20 implementation for maximum efficiency and performance.
-- **Native ML Support**: Integrated XGBoost and LightGBM training and inference.
+- **Optional ML Support**: XGBoost and LightGBM training/inference when the optional libraries are available at build time.
 - **High-Performance Technical Indicators**: Internal indicator library optimized for speed.
 - **Robust Database Integration**: PostgreSQL support with connection pooling and upsert capability.
 - **Container Ready**: Multi-stage Docker build for easy deployment.
@@ -31,7 +31,8 @@ export VCPKG_ROOT=$(pwd)/vcpkg
 ### 2. Build the Project
 
 ```bash
-mkdir build && cd build
+cd cpp-cohida
+mkdir -p build && cd build
 cmake .. -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
 make -j2
 ```
@@ -40,14 +41,21 @@ make -j2
 
 ### 1. Configure Environment
 
-Create a `.env` file based on `env.example`:
+Create a `.env` file based on `env.example`. The C++ loader gives precedence to
+the `POSTGRES_DB_*` variables shown below, then accepts corresponding `DB_*`
+names as fallbacks:
 
 ```env
 COINBASE_API_KEY=your_key
 COINBASE_API_SECRET=your_secret
 COINBASE_API_PASSPHRASE=your_passphrase
-POSTGRES_HOST=localhost
-POSTGRES_DB=cohida
+POSTGRES_DB_HOST=localhost
+POSTGRES_DB_PORT=5432
+POSTGRES_DB_NAME=cohida
+POSTGRES_DB_USER=postgres
+POSTGRES_DB_PASSWORD=postgres
+POSTGRES_DB_SCHEMA=public
+POSTGRES_DB_TABLE=crypto
 ...
 ```
 
@@ -55,28 +63,31 @@ POSTGRES_DB=cohida
 
 ```bash
 # Test connections
-./bin/cohida test
+./cpp-cohida/build/bin/cohida test
 
 # List available symbols
-./bin/cohida symbols
+./cpp-cohida/build/bin/cohida symbols
 
 # Retrieve Bitcoin data for a date range
-./bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
+./cpp-cohida/build/bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
 
 # Train an ML model
-./bin/cohida ml-train -s BTC-USD --model-type xgboost
+./cpp-cohida/build/bin/cohida ml-train -s BTC-USD --model-type xgboost
 
 # Advanced: Pipe symbols into retrieve-all (to fetch data for all symbols)
-./bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {}
+./cpp-cohida/build/bin/cohida symbols --list | xargs -I {} ./cpp-cohida/build/bin/cohida retrieve-all -s {}
 ```
 
 ## 🐳 Deployment
 
 ### Local Development
 
-Build and run everything locally from source:
+Build the C++ application from source against the named production database
+network. Start the database first, then build/run the application compose file:
 
 ```bash
+podman-compose -f podman-compose.prod.yml up -d db
+cd cpp-cohida
 podman-compose up --build
 ```
 
@@ -93,9 +104,9 @@ podman-compose -f podman-compose.prod.yml up -d
 
 ### Production Usage Examples
 
-When running one-off production jobs, start PostgreSQL once and wait for its
-healthcheck before using `run --no-deps`. This prevents each loop iteration
-from recreating PostgreSQL and racing its recovery.
+When running one-off production jobs, the supplied scripts start PostgreSQL,
+wait for its healthcheck, verify DNS, and test application connectivity before
+running any application command.
 
 The production compose file creates the named `cohida-net` network and
 advertises its database service as `cohida-db`. The C++ and legacy compose files
@@ -146,13 +157,13 @@ The following granularities (in seconds) are supported by the Coinbase Advanced 
 Run the comprehensive unit test suite:
 
 ```bash
-./bin/cohida-unit-tests
+./cpp-cohida/build/bin/cohida-unit-tests
 ```
 
 ## 📚 Documentation
 
 - [Migration Guide](docs/migration_guide.md)
-- [Recommended GitHub Actions](docs/recommended_github_actions.md)
+- [Current GitHub Actions workflow](.github/workflows/deploy.yml)
 - [C++ Conversion TODO List](docs/cpp_todo.md)
 
 ## 📄 License
