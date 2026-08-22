@@ -123,11 +123,10 @@ it performs the same preflight before passing arguments to the app container:
 ./scripts/run-production.sh ./bin/cohida test
 ```
 
-Do not invoke `podman-compose run --rm --no-deps cohida-app` directly. The
-`--no-deps` flag explicitly bypasses database startup, which can create a
-temporary app container that repeatedly fails to resolve `cohida-db`. Do not
-use a raw loop for production retrieval; use `scripts/retrieve-production.sh`
-so PostgreSQL is started and verified before the loop.
+Do not invoke an unguarded raw loop for production retrieval; use
+`scripts/retrieve-production.sh` so PostgreSQL is started and verified before
+the loop. Its application runs intentionally omit `--no-deps`, allowing the
+Compose `db` dependency to be honored as an additional startup guard.
 
 ### Supported Granularities
 

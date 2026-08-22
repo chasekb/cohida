@@ -51,10 +51,10 @@ if [[ "$health_status" != "healthy" ]]; then
 fi
 
 printf 'Checking db DNS on the production compose network\n'
-podman-compose -f "$compose_file" run --rm --no-deps cohida-app getent hosts "$db_host" >/dev/null
+podman-compose -f "$compose_file" run --rm cohida-app getent hosts "$db_host" >/dev/null
 
 printf 'Checking application database connectivity\n'
-if ! test_output="$(podman-compose -f "$compose_file" run --rm --no-deps cohida-app ./bin/cohida test 2>&1)"; then
+if ! test_output="$(podman-compose -f "$compose_file" run --rm cohida-app ./bin/cohida test 2>&1)"; then
   printf '%s\n' "$test_output"
   printf 'error: application connectivity test command failed\n' >&2
   exit 1
@@ -72,7 +72,7 @@ fi
 
 for granularity in "${granularities[@]}"; do
   printf 'Retrieving all symbols at granularity %s\n' "$granularity"
-  podman-compose -f "$compose_file" run --rm --no-deps cohida-app sh -c \
+  podman-compose -f "$compose_file" run --rm cohida-app sh -c \
     './bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {} -g "$1"' \
     sh "$granularity"
 done

@@ -44,7 +44,7 @@ require_fixed "$entrypoint" 'health_status="$(podman inspect "$db_container"'
 require_fixed "$entrypoint" '[[ "$health_status" == "healthy" ]]'
 require_fixed "$entrypoint" '[[ "$health_status" != "healthy" ]]'
 require_fixed "$entrypoint" 'exit 1'
-require_fixed "$entrypoint" 'podman-compose -f "$compose_file" run --rm --no-deps cohida-app getent hosts "$db_host"'
+require_fixed "$entrypoint" 'podman-compose -f "$compose_file" run --rm cohida-app getent hosts "$db_host"'
 require_fixed "$entrypoint" 'Database Connection Successful'
 require_fixed "$entrypoint" 'application connectivity test did not confirm database success'
 require_fixed "$entrypoint" 'COHIDA_PREFLIGHT_ONLY:-0'
@@ -52,7 +52,7 @@ require_fixed "$entrypoint" 'for granularity in "${granularities[@]}"; do'
 require_fixed "$entrypoint" 'retrieve-all -s {} -g'
 require_fixed "$runner" 'if (($# == 0)); then'
 require_fixed "$runner" 'COHIDA_PREFLIGHT_ONLY=1 "$script_dir/retrieve-production.sh"'
-require_fixed "$runner" 'podman-compose -f "$compose_file" run --rm --no-deps cohida-app "$@"'
+require_fixed "$runner" 'podman-compose -f "$compose_file" run --rm cohida-app "$@"'
 
 network_count=$(grep -Fc 'cohida-net:' "$compose_file")
 if ((network_count < 2)); then
