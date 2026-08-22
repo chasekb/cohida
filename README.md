@@ -106,43 +106,23 @@ project's service name. If a container on `db_prdnet` reports `could not
 translate host name "db"`, inspect the rendered compose environment first:
 the container is using the production alias against the shared network.
 
+The guarded entrypoint is the sole recommended production retrieval path. It
+starts PostgreSQL, waits up to five minutes for health, verifies `db` DNS from
+the application network, tests connectivity, and stops before retrieval if any
+preflight fails:
+
 ```bash
-set -e
-
-# Start PostgreSQL once and wait until it accepts connections
-podman-compose -f podman-compose.prod.yml up -d db
-until [ "$(podman inspect cohida-db-prod --format '{{.State.Health.Status}}')" = healthy ]; do
-    sleep 5
-done
-
-# Optional DNS sanity check from the same compose network
-podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app getent hosts db
-
-# Do not start a retrieval loop if the application cannot resolve its DB alias.
-# Production compose explicitly injects both DB_HOST/DB_PORT and the higher-
-# precedence POSTGRES_DB_HOST/POSTGRES_DB_PORT values after .env.
-
-# Test connections
-podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida test
-
-# List available symbols
-podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida symbols
-
-# Retrieve Bitcoin data for a date range
-podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
-
-# Fetch data for all symbols for a single granularity (e.g., 1 hour).
-# The entrypoint performs the database and DNS preflight first.
-./scripts/retrieve-production.sh 3600
-
-# Fetch data for all symbols across the supported production granularities.
-# This guarded entrypoint starts PostgreSQL, waits for health, verifies db DNS,
-# tests application connectivity, and stops before retrieval if any preflight fails.
+# Fetch all symbols across the supported granularities.
 ./scripts/retrieve-production.sh
 
-# Optional: retrieve only selected granularities after the same preflight.
+# Or fetch selected granularities after the same preflight.
 ./scripts/retrieve-production.sh 3600 86400
 ```
+
+Use the raw `podman-compose run` commands only for diagnostics after the
+entrypoint has completed its preflight. Do not use a raw loop for production
+retrieval; it can repeatedly launch containers against a missing or detached
+database and hide the first actionable failure.
 
 ### Supported Granularities
 

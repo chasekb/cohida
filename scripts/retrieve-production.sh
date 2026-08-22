@@ -5,6 +5,11 @@ compose_file="${COHIDA_COMPOSE_FILE:-podman-compose.prod.yml}"
 db_container="${COHIDA_DB_CONTAINER:-cohida-db-prod}"
 health_timeout="${COHIDA_DB_HEALTH_TIMEOUT_SECONDS:-300}"
 
+if ! [[ "$health_timeout" =~ ^[1-9][0-9]*$ ]] || ((health_timeout > 1800)); then
+  printf 'error: COHIDA_DB_HEALTH_TIMEOUT_SECONDS must be an integer from 1 to 1800\n' >&2
+  exit 2
+fi
+
 if ! command -v podman-compose >/dev/null 2>&1; then
   printf 'error: podman-compose is required\n' >&2
   exit 127
@@ -30,7 +35,10 @@ while ((SECONDS < deadline)); do
   if [[ "$health_status" == "healthy" ]]; then
     break
   fi
-  sleep 5
+  remaining=$((deadline - SECONDS))
+  ((remaining > 0)) || break
+  sleep_for=$((remaining < 5 ? remaining : 5))
+  sleep "$sleep_for"
 done
 
 health_status="$(podman inspect "$db_container" --format '{{.State.Health.Status}}' 2>/dev/null || true)"
