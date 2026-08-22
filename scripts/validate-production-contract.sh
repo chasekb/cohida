@@ -50,11 +50,11 @@ if ((network_count < 2)); then
   exit 1
 fi
 
-up_line=$(grep -nF 'up -d db' "$entrypoint" | head -n1 | cut -d: -f1)
-dns_line=$(grep -nF 'getent hosts db' "$entrypoint" | head -n1 | cut -d: -f1)
+network_line=$(grep -nF 'podman network inspect "$db_network"' "$entrypoint" | head -n1 | cut -d: -f1)
+dns_line=$(grep -nF 'getent hosts "$db_host"' "$entrypoint" | head -n1 | cut -d: -f1)
 loop_line=$(grep -nF 'for granularity in' "$entrypoint" | head -n1 | cut -d: -f1)
-if ! ((up_line < dns_line && dns_line < loop_line)); then
-  printf 'preflight ordering is invalid: up=%s dns=%s loop=%s\n' "$up_line" "$dns_line" "$loop_line" >&2
+if ! ((network_line < dns_line && dns_line < loop_line)); then
+  printf 'preflight ordering is invalid: network=%s dns=%s loop=%s\n' "$network_line" "$dns_line" "$loop_line" >&2
   exit 1
 fi
 
