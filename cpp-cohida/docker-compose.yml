@@ -6,17 +6,17 @@ services:
     container_name: cpp-cohida
     env_file:
       - .env
-    # db_prdnet is shared with the standalone Postgres stack, whose
-    # stable network alias is postgres (not the prod compose service name db).
+    # Attach to the named production network and use its cohida-db alias.
     environment:
-      DB_HOST: postgres
+      DB_HOST: cohida-db
       DB_PORT: 5432
     volumes:
       - ./outputs:/app/outputs
       - ./.env:/app/.env:ro
     networks:
-      - db_prdnet
+      - cohida-net
 
 networks:
-  db_prdnet:
+  cohida-net:
     external: true
+    name: cohida-net

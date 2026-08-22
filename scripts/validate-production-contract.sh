@@ -18,16 +18,17 @@ require_fixed() {
 [[ -f "$entrypoint" ]] || { printf 'missing %s\n' "$entrypoint" >&2; exit 1; }
 bash -n "$entrypoint"
 
-require_fixed "$compose_file" 'DB_HOST: postgres'
+require_fixed "$compose_file" 'DB_HOST: cohida-db'
 require_fixed "$compose_file" 'DB_PORT: 5432'
-require_fixed "$compose_file" 'POSTGRES_DB_HOST: postgres'
+require_fixed "$compose_file" 'POSTGRES_DB_HOST: cohida-db'
 require_fixed "$compose_file" 'POSTGRES_DB_PORT: 5432'
-require_fixed "$compose_file" '      db_prdnet:'
-require_fixed "$compose_file" '    external: true'
-require_fixed "$compose_file" 'name: db_prdnet'
+require_fixed "$compose_file" '      cohida-net:'
+require_fixed "$compose_file" '          - cohida-db'
+require_fixed "$compose_file" '    name: cohida-net'
 
-require_fixed "$entrypoint" 'db_container="${COHIDA_DB_CONTAINER:-db-postgres}"'
-require_fixed "$entrypoint" 'db_network="${COHIDA_DB_NETWORK:-db_prdnet}"'
+require_fixed "$entrypoint" 'db_container="${COHIDA_DB_CONTAINER:-cohida-db-prod}"'
+require_fixed "$entrypoint" 'db_network="${COHIDA_DB_NETWORK:-cohida-net}"'
+require_fixed "$entrypoint" 'podman-compose -f "$compose_file" up -d db'
 require_fixed "$entrypoint" 'podman network inspect "$db_network"'
 require_fixed "$entrypoint" 'COHIDA_DB_HEALTH_TIMEOUT_SECONDS:-300'
 require_fixed "$entrypoint" 'health_timeout > 1800'
@@ -44,13 +45,13 @@ require_fixed "$entrypoint" 'COHIDA_PREFLIGHT_ONLY:-0'
 require_fixed "$entrypoint" 'for granularity in "${granularities[@]}"; do'
 require_fixed "$entrypoint" 'retrieve-all -s {} -g'
 
-network_count=$(grep -Fc 'db_prdnet:' "$compose_file")
+network_count=$(grep -Fc 'cohida-net:' "$compose_file")
 if ((network_count < 2)); then
-  printf 'expected app and top-level db_prdnet declarations\n' >&2
+  printf 'expected app, db, and top-level cohida-net declarations\n' >&2
   exit 1
 fi
 
-network_line=$(grep -nF 'podman network inspect "$db_network"' "$entrypoint" | head -n1 | cut -d: -f1)
+network_line=$(grep -nF 'up -d db' "$entrypoint" | head -n1 | cut -d: -f1)
 dns_line=$(grep -nF 'getent hosts "$db_host"' "$entrypoint" | head -n1 | cut -d: -f1)
 loop_line=$(grep -nF 'for granularity in' "$entrypoint" | head -n1 | cut -d: -f1)
 if ! ((network_line < dns_line && dns_line < loop_line)); then

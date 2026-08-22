@@ -9,7 +9,7 @@ services:
     environment:
       - POSTGRES_USER_FILE=/app/db/postgres-u.txt
       - POSTGRES_PASSWORD_FILE=/app/db/postgres-p.txt
-      - POSTGRES_HOST=postgres
+      - POSTGRES_HOST=cohida-db
       - POSTGRES_PORT=5432
     volumes:
       - ./db:/app/db:ro
@@ -17,8 +17,9 @@ services:
       - ./.env:/app/.env:ro
       - ./src:/app/src
     networks:
-      - db_prdnet
+      - cohida-net
 
 networks:
-  db_prdnet:
+  cohida-net:
     external: true
+    name: cohida-net

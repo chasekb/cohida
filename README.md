@@ -85,28 +85,24 @@ podman-compose up --build
 Pull and run the latest production-ready image from GitHub Container Registry (GHCR):
 
 ```bash
-# The production application uses the shared PostgreSQL service on db_prdnet.
-podman network inspect db_prdnet >/dev/null
+# Start the production database and application in the background.
 podman-compose -f podman-compose.prod.yml up -d
 ```
 
 ### Production Usage Examples
 
-When running one-off production jobs, verify the shared PostgreSQL service is
-healthy before using `run --no-deps`. This prevents each loop iteration from
-starting against a missing database or racing database recovery.
+When running one-off production jobs, start PostgreSQL once and wait for its
+healthcheck before using `run --no-deps`. This prevents each loop iteration
+from recreating PostgreSQL and racing its recovery.
 
-The production, C++ development/test, and legacy Python compose files use the
-external `db_prdnet` network. The standalone PostgreSQL service is advertised
-as `postgres`; production explicitly overrides both `DB_HOST` and
-`POSTGRES_DB_HOST` to that alias. Do not use the retired `db` hostname for
-production retrieval. The database credentials supplied through the local
-`.env` must match the existing shared PostgreSQL service; the preflight stops
-before retrieval when authentication fails.
+The production compose file creates the named `cohida-net` network and
+advertises its database service as `cohida-db`. The C++ and legacy compose files
+attach to that same named network and use the same database alias. Production
+explicitly overrides both `DB_HOST` and `POSTGRES_DB_HOST` to `cohida-db` so
+stale `.env` host values cannot select another network.
 
 The guarded entrypoint is the sole recommended production retrieval path. It
-waits up to five minutes for the shared PostgreSQL service, verifies `postgres`
-DNS from
+waits up to five minutes for `cohida-db-prod`, verifies `cohida-db` DNS from
 the application network, tests connectivity, and stops before retrieval if any
 preflight fails:
 

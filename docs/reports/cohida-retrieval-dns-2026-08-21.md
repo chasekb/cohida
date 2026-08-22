@@ -16,20 +16,18 @@ No credentials or secret-bearing environment values are included here.
 ## Root-cause boundary
 
 The C++ configuration loader gives `POSTGRES_DB_HOST` precedence over
-`DB_HOST`, and otherwise accepts `DB_HOST`. Production compose uses the
-`cohida-net` network and the database service alias `db`; the shared external
-`db_prdnet` contract instead uses `postgres`. A production one-off container
-must not inherit a stale hostname from `.env` or be treated as a shared-network
-container.
+`DB_HOST`, and otherwise accepts `DB_HOST`. Production compose uses the named
+`cohida-net` network and the database service alias `cohida-db`. A production
+one-off container must not inherit a stale hostname from `.env`.
 
 ## Implementation
 
-Production compose now explicitly injects both `DB_HOST=db`/`DB_PORT=5432`
-and the higher-precedence `POSTGRES_DB_HOST=db`/`POSTGRES_DB_PORT=5432` in the
-application service after `env_file`, making the production network selection
-deterministic even when `.env` contains stale values. The operator procedure
-now enables shell fail-fast behavior, waits for database health, and performs
-the same-network `db` DNS probe before the retrieval loop.
+Production compose now explicitly injects both `DB_HOST=cohida-db`/`DB_PORT=5432`
+and the higher-precedence `POSTGRES_DB_HOST=cohida-db`/`POSTGRES_DB_PORT=5432`
+in the application service after `env_file`, making the production network
+selection deterministic even when `.env` contains stale values. The operator
+procedure waits for database health and performs the same-network `cohida-db`
+DNS probe before the retrieval loop.
 
 ## Verification boundary
 

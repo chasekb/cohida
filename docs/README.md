@@ -74,11 +74,8 @@ COINBASE_SANDBOX=false
 ### 3. Deploy with Podman Compose
 
 ```bash
-# Ensure the db_prdnet network exists (should be created by your PostgreSQL setup)
-podman network create db_prdnet 2>/dev/null || true
-
-# Start the application (connects to existing PostgreSQL on db_prdnet)
-podman-compose up -d
+# Start the production database and application
+podman-compose -f ../podman-compose.prod.yml up -d
 
 # Check status
 podman-compose ps
@@ -301,9 +298,9 @@ Example: `BTC-USD_20231201_143022.csv`
    - Ensure API key has proper permissions
 
 2. **Database Connection Failed**
-   - Verify PostgreSQL container is running on db_prdnet network
+   - Verify PostgreSQL container is running on the cohida-net network
    - Check database credentials in `db/` folder
-   - Ensure db_prdnet network exists: `podman network ls | grep db_prdnet`
+   - Ensure cohida-net exists: `podman network ls | grep cohida-net`
    - Verify database is accessible from application container
 
 3. **No Data Retrieved**

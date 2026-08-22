@@ -9,19 +9,19 @@ services:
     container_name: cpp-cohida-test
     env_file:
       - .env.test
-    # db_prdnet is shared with the standalone Postgres stack, whose
-    # stable network alias is postgres (not the production compose alias db).
+    # Attach to the named production network and use its cohida-db alias.
     environment:
-      DB_HOST: postgres
+      DB_HOST: cohida-db
       DB_PORT: 5432
     volumes:
       - ./test_outputs:/app/outputs
       # Mount .env.test to /app/.env.test so C++ config loader finds it
       - ./.env.test:/app/.env.test:ro
     networks:
-      - db_prdnet
+      - cohida-net
     command: [ "./bin/cohida-unit-tests" ]
 
 networks:
-  db_prdnet:
+  cohida-net:
     external: true
+    name: cohida-net

@@ -2,9 +2,9 @@
 set -Eeuo pipefail
 
 compose_file="${COHIDA_COMPOSE_FILE:-podman-compose.prod.yml}"
-db_container="${COHIDA_DB_CONTAINER:-db-postgres}"
-db_network="${COHIDA_DB_NETWORK:-db_prdnet}"
-db_host="${COHIDA_DB_HOST:-postgres}"
+db_container="${COHIDA_DB_CONTAINER:-cohida-db-prod}"
+db_network="${COHIDA_DB_NETWORK:-cohida-net}"
+db_host="${COHIDA_DB_HOST:-cohida-db}"
 health_timeout="${COHIDA_DB_HEALTH_TIMEOUT_SECONDS:-300}"
 
 if ! [[ "$health_timeout" =~ ^[1-9][0-9]*$ ]] || ((health_timeout > 1800)); then
@@ -27,7 +27,8 @@ else
   granularities=(300 900 3600 21600 86400)
 fi
 
-printf 'Checking shared production database network from %s\n' "$compose_file"
+printf 'Starting production database service from %s\n' "$compose_file"
+podman-compose -f "$compose_file" up -d db
 podman network inspect "$db_network" >/dev/null
 
 printf 'Waiting for %s to become healthy (timeout: %ss)\n' "$db_container" "$health_timeout"

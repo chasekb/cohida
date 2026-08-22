@@ -6,12 +6,12 @@ services:
     container_name: cohida-app-prod
     env_file:
       - .env
-    # Production uses the shared PostgreSQL service on db_prdnet.
+    # Production uses the PostgreSQL service defined below.
     # Explicit values override stale host settings inherited from .env.
     environment:
-      DB_HOST: postgres
+      DB_HOST: cohida-db
       DB_PORT: 5432
-      POSTGRES_DB_HOST: postgres
+      POSTGRES_DB_HOST: cohida-db
       POSTGRES_DB_PORT: 5432
     dns:
       - 1.1.1.1
@@ -19,12 +19,35 @@ services:
       - ./outputs:/app/outputs
       - ./models:/app/models
     networks:
-      db_prdnet:
+      cohida-net:
         aliases:
           - cohida-app
     restart: unless-stopped
 
+  db:
+    image: docker.io/library/postgres:15-alpine
+    container_name: cohida-db-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME:-cohida}
+      POSTGRES_USER: ${POSTGRES_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-postgres}
+    ports:
+      - "5435:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    networks:
+      cohida-net:
+        aliases:
+          - cohida-db
+          - cohida-db-prod
+    restart: unless-stopped
+
 networks:
-  db_prdnet:
-    external: true
-    name: db_prdnet
+  cohida-net:
+    name: cohida-net
+    driver: bridge
