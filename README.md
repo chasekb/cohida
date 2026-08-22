@@ -131,13 +131,17 @@ podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/co
 # Retrieve Bitcoin data for a date range
 podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app ./bin/cohida retrieve -s BTC-USD --start 2024-01-01 --end 2024-02-01 -g 3600
 
-# Advanced: Fetch data for all symbols for a single granularity (e.g., 1 hour)
-podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app sh -c './bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {} -g 3600'
+# Fetch data for all symbols for a single granularity (e.g., 1 hour).
+# The entrypoint performs the database and DNS preflight first.
+./scripts/retrieve-production.sh 3600
 
-# Advanced: Fetch data for all symbols across multiple granularities (e.g., 1h and 1d)
-for g in 3600 86400; do
-    podman-compose -f podman-compose.prod.yml run --rm --no-deps cohida-app sh -c "./bin/cohida symbols --list | xargs -I {} ./bin/cohida retrieve-all -s {} -g $g"
-done
+# Fetch data for all symbols across the supported production granularities.
+# This guarded entrypoint starts PostgreSQL, waits for health, verifies db DNS,
+# tests application connectivity, and stops before retrieval if any preflight fails.
+./scripts/retrieve-production.sh
+
+# Optional: retrieve only selected granularities after the same preflight.
+./scripts/retrieve-production.sh 3600 86400
 ```
 
 ### Supported Granularities
