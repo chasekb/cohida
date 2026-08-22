@@ -85,7 +85,9 @@ podman-compose up --build
 Pull and run the latest production-ready image from GitHub Container Registry (GHCR):
 
 ```bash
-# Start the production database and application in the background.
+# Start the production database and application in the background. The app has
+# an explicit healthy-database dependency, so ordinary up/run commands do not
+# launch application work before PostgreSQL is ready.
 podman-compose -f podman-compose.prod.yml up -d
 ```
 
@@ -115,9 +117,11 @@ preflight fails:
 ```
 
 Use the raw `podman-compose run` commands only for diagnostics after the
-entrypoint has completed its preflight. Do not use a raw loop for production
-retrieval; it can repeatedly launch containers against a missing or detached
-database and hide the first actionable failure.
+entrypoint has completed its preflight. When invoking a raw application run,
+do not pass `--no-deps`: the production Compose contract starts `db` and waits
+for its healthcheck before starting `cohida-app`. Do not use a raw loop for
+production retrieval; it can repeatedly launch containers against a missing
+or detached database and hide the first actionable failure.
 
 ### Supported Granularities
 

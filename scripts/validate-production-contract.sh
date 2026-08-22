@@ -22,6 +22,9 @@ require_fixed "$compose_file" 'DB_HOST: cohida-db'
 require_fixed "$compose_file" 'DB_PORT: 5432'
 require_fixed "$compose_file" 'POSTGRES_DB_HOST: cohida-db'
 require_fixed "$compose_file" 'POSTGRES_DB_PORT: 5432'
+require_fixed "$compose_file" '    depends_on:'
+require_fixed "$compose_file" '      db:'
+require_fixed "$compose_file" '        condition: service_healthy'
 require_fixed "$compose_file" '      cohida-net:'
 require_fixed "$compose_file" '          - cohida-db'
 require_fixed "$compose_file" '    name: cohida-net'
@@ -51,9 +54,15 @@ if ((network_count < 2)); then
   exit 1
 fi
 
+depends_on_line=$(grep -nF '    depends_on:' "$compose_file" | head -n1 | cut -d: -f1)
+db_service_line=$(grep -nF '  db:' "$compose_file" | head -n1 | cut -d: -f1)
 network_line=$(grep -nF 'up -d db' "$entrypoint" | head -n1 | cut -d: -f1)
 dns_line=$(grep -nF 'getent hosts "$db_host"' "$entrypoint" | head -n1 | cut -d: -f1)
 loop_line=$(grep -nF 'for granularity in' "$entrypoint" | head -n1 | cut -d: -f1)
+if ! ((depends_on_line < db_service_line)); then
+  printf 'compose startup ordering is invalid: depends_on=%s db=%s\n' "$depends_on_line" "$db_service_line" >&2
+  exit 1
+fi
 if ! ((network_line < dns_line && dns_line < loop_line)); then
   printf 'preflight ordering is invalid: network=%s dns=%s loop=%s\n' "$network_line" "$dns_line" "$loop_line" >&2
   exit 1
