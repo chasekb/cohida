@@ -2,7 +2,9 @@
 set -Eeuo pipefail
 
 compose_file="${COHIDA_COMPOSE_FILE:-podman-compose.prod.yml}"
-db_container="${COHIDA_DB_CONTAINER:-cohida-db-prod}"
+db_container="${COHIDA_DB_CONTAINER:-db-postgres}"
+db_network="${COHIDA_DB_NETWORK:-db_prdnet}"
+db_host="${COHIDA_DB_HOST:-postgres}"
 health_timeout="${COHIDA_DB_HEALTH_TIMEOUT_SECONDS:-300}"
 
 if ! [[ "$health_timeout" =~ ^[1-9][0-9]*$ ]] || ((health_timeout > 1800)); then
@@ -25,8 +27,8 @@ else
   granularities=(300 900 3600 21600 86400)
 fi
 
-printf 'Starting production database service from %s\n' "$compose_file"
-podman-compose -f "$compose_file" up -d db
+printf 'Checking shared production database network from %s\n' "$compose_file"
+podman network inspect "$db_network" >/dev/null
 
 printf 'Waiting for %s to become healthy (timeout: %ss)\n' "$db_container" "$health_timeout"
 deadline=$((SECONDS + health_timeout))
@@ -48,10 +50,24 @@ if [[ "$health_status" != "healthy" ]]; then
 fi
 
 printf 'Checking db DNS on the production compose network\n'
-podman-compose -f "$compose_file" run --rm --no-deps cohida-app getent hosts db >/dev/null
+podman-compose -f "$compose_file" run --rm --no-deps cohida-app getent hosts "$db_host" >/dev/null
 
 printf 'Checking application database connectivity\n'
-podman-compose -f "$compose_file" run --rm --no-deps cohida-app ./bin/cohida test
+if ! test_output="$(podman-compose -f "$compose_file" run --rm --no-deps cohida-app ./bin/cohida test 2>&1)"; then
+  printf '%s\n' "$test_output"
+  printf 'error: application connectivity test command failed\n' >&2
+  exit 1
+fi
+printf '%s\n' "$test_output"
+if ! grep -Fq 'Database Connection Successful' <<<"$test_output"; then
+  printf 'error: application connectivity test did not confirm database success\n' >&2
+  exit 1
+fi
+
+if [[ "${COHIDA_PREFLIGHT_ONLY:-0}" == "1" ]]; then
+  printf 'Production database preflight passed; retrieval loop not requested\n'
+  exit 0
+fi
 
 for granularity in "${granularities[@]}"; do
   printf 'Retrieving all symbols at granularity %s\n' "$granularity"

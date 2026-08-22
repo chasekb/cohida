@@ -85,29 +85,28 @@ podman-compose up --build
 Pull and run the latest production-ready image from GitHub Container Registry (GHCR):
 
 ```bash
-# Start the database and application in the background
+# The production application uses the shared PostgreSQL service on db_prdnet.
+podman network inspect db_prdnet >/dev/null
 podman-compose -f podman-compose.prod.yml up -d
 ```
 
 ### Production Usage Examples
 
-When running one-off production jobs, start PostgreSQL once and wait for its
-healthcheck before using `run --no-deps`. This prevents each loop iteration
-from recreating PostgreSQL and racing its crash recovery.
+When running one-off production jobs, verify the shared PostgreSQL service is
+healthy before using `run --no-deps`. This prevents each loop iteration from
+starting against a missing database or racing database recovery.
 
-The production compose file provides the `db` DNS alias only on
-`cohida-net`. The C++ development/test and legacy Python compose files join
-the external `db_prdnet` network, where the standalone PostgreSQL service is
-advertised as `postgres`; the C++ files explicitly override `DB_HOST` and
-`DB_PORT`, while the legacy Python file sets `POSTGRES_HOST` and
-`POSTGRES_PORT`. Do not mix the two compose projects or run an
-application container on one network while its `DB_HOST` points at the other
-project's service name. If a container on `db_prdnet` reports `could not
-translate host name "db"`, inspect the rendered compose environment first:
-the container is using the production alias against the shared network.
+The production, C++ development/test, and legacy Python compose files use the
+external `db_prdnet` network. The standalone PostgreSQL service is advertised
+as `postgres`; production explicitly overrides both `DB_HOST` and
+`POSTGRES_DB_HOST` to that alias. Do not use the retired `db` hostname for
+production retrieval. The database credentials supplied through the local
+`.env` must match the existing shared PostgreSQL service; the preflight stops
+before retrieval when authentication fails.
 
 The guarded entrypoint is the sole recommended production retrieval path. It
-starts PostgreSQL, waits up to five minutes for health, verifies `db` DNS from
+waits up to five minutes for the shared PostgreSQL service, verifies `postgres`
+DNS from
 the application network, tests connectivity, and stops before retrieval if any
 preflight fails:
 
