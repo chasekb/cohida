@@ -148,6 +148,7 @@ if ! test_output="$(podman-compose -f "$compose_file" run --rm cohida-app ./bin/
 fi
 printf '%s\n' "$test_output"
 if ! grep -Fq 'Database Connection Successful' <<<"$test_output"; then
+  printf 'error: application connectivity test did not confirm database success\n' >&2
   fail_preflight persistence_readback 'operator: repair database connectivity before retrieval'
 fi
 
