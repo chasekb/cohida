@@ -85,7 +85,7 @@ depends_on_line=$(grep -nF '    depends_on:' "$compose_file" | head -n1 | cut -d
 db_service_line=$(grep -nF '  db:' "$compose_file" | head -n1 | cut -d: -f1)
 network_line=$(grep -nF 'up -d db' "$entrypoint" | head -n1 | cut -d: -f1)
 dns_line=$(grep -nF 'getent hosts "$db_host"' "$entrypoint" | head -n1 | cut -d: -f1)
-loop_line=$(grep -nF 'for granularity in' "$entrypoint" | head -n1 | cut -d: -f1)
+loop_line=$(grep -nF 'for granularity in "${granularities[@]}"' "$entrypoint" | head -n1 | cut -d: -f1)
 if ! ((depends_on_line < db_service_line)); then
   printf 'compose startup ordering is invalid: depends_on=%s db=%s\n' "$depends_on_line" "$db_service_line" >&2
   exit 1
