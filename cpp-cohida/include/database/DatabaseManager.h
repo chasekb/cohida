@@ -11,6 +11,18 @@
 
 namespace database {
 
+struct WriteFailure {
+    std::string symbol;
+    std::string error;
+};
+
+struct WriteResult {
+    int written_count = 0;
+    std::vector<WriteFailure> failures;
+
+    bool complete() const { return failures.empty(); }
+};
+
 class DatabaseManager {
 public:
     DatabaseManager(int granularity = -1);
@@ -26,6 +38,7 @@ public:
     
     // Data operations
     int write_data(const std::vector<models::CryptoPriceData>& data_points);
+    WriteResult write_data_detailed(const std::vector<models::CryptoPriceData>& data_points);
     std::vector<models::CryptoPriceData> read_data(const std::string& symbol, 
                                             const std::chrono::system_clock::time_point& start_date,
                                             const std::chrono::system_clock::time_point& end_date);
