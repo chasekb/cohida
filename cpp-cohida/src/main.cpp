@@ -231,8 +231,13 @@ int main(int argc, char **argv) {
 
         // Save to DB
         DatabaseManager db(ret_granularity);
-        db.write_data(result.data_points);
-        LOG_INFO("Data written to database");
+        auto write_result = db.write_data_detailed(result.data_points);
+        if (write_result.complete()) {
+          LOG_INFO("Data written to database");
+        } else {
+          LOG_ERROR("Database write incomplete: {} of {} data points written",
+                    write_result.written_count, result.data_points.size());
+        }
 
         // Check file output
         if (!ret_output.empty()) {
@@ -277,8 +282,13 @@ int main(int argc, char **argv) {
                  ra_symbol, result.data_points.size());
         // Save to DB
         DatabaseManager db(ra_granularity);
-        db.write_data(result.data_points);
-        LOG_INFO("All data written to database");
+        auto write_result = db.write_data_detailed(result.data_points);
+        if (write_result.complete()) {
+          LOG_INFO("All data written to database");
+        } else {
+          LOG_ERROR("Database write incomplete: {} of {} data points written",
+                    write_result.written_count, result.data_points.size());
+        }
       } else {
         LOG_ERROR("Failed to retrieve all data: {}",
                   result.error_message.empty() ? "Unknown error"
