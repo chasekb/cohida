@@ -64,7 +64,7 @@ fresh_file() {
   ((mtime <= now && now - mtime <= freshness_cutoff))
 }
 
-[[ -d "$run_dir" ]] || fail worker_monitor_lifecycle 'operator: inspect the requested run identity' "$run_dir" 'do not duplicate or kill an unknown run'
+[[ -d "$run_dir" ]] || fail worker_monitor_lifecycle 'operator: inspect the requested run identity' "$run_dir" 'do not start a duplicate run or kill an unknown run'
 [[ -f "$metadata_file" ]] || fail worker_monitor_lifecycle 'operator: restore missing run provenance' "$metadata_file" 'do not treat an unproven run as successful'
 [[ -f "$run_dir/stdout.log" && -f "$run_dir/stderr.log" ]] || fail worker_monitor_lifecycle 'operator: retain both log streams' "$run_dir" 'do not treat partial logs as successful'
 [[ -f "$terminal_file" ]] || fail worker_monitor_lifecycle 'operator: wait for terminal evidence' "$terminal_file" 'do not accept an incomplete run'
