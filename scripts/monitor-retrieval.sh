@@ -96,14 +96,14 @@ for granularity in "${expected_granularities[@]}"; do
   [[ "$status_mtime" =~ ^[0-9]+$ ]] && ((status_mtime <= terminal_mtime)) || fail failure_signaling "operator: resolve status evidence written after terminal closure for $granularity" "$status_file" 'stop on partial evidence'
   status_granularity="$(field "$status_file" granularity)" || fail failure_signaling 'operator: parse restricted status evidence' "$status_file" 'reject untrusted evidence'
   status_outcome="$(field "$status_file" outcome)" || fail failure_signaling 'operator: parse restricted status outcome' "$status_file" 'reject untrusted evidence'
-  application_exit="$(field "$status_file" application_exit_status)" || fail failure_signaling 'operator: parse application exit evidence' "$status_file" 'reject untrusted evidence'
+  application_exit_status="$(field "$status_file" application_exit_status)" || fail failure_signaling 'operator: parse application exit evidence' "$status_file" 'reject untrusted evidence'
   wrapper_status="$(field "$status_file" wrapper_status)" || fail failure_signaling 'operator: parse wrapper exit evidence' "$status_file" 'reject untrusted evidence'
   [[ "$status_granularity" == "$granularity" ]] || fail failure_signaling 'operator: resolve contradictory granularity' "$status_file" 'stop on ambiguous evidence'
   case "$status_outcome" in SUCCEEDED|BLOCKED|NOT_TESTED) ;; *) fail failure_signaling 'operator: resolve contradictory outcome' "$status_file" 'stop on ambiguous evidence' ;; esac
-  [[ "$application_exit" =~ ^(0|[1-9][0-9]*)$|^NOT_OBSERVED$ ]] || fail failure_signaling 'operator: resolve invalid application exit evidence' "$status_file" 'stop on ambiguous evidence'
+  [[ "$application_exit_status" =~ ^(0|[1-9][0-9]*)$|^NOT_OBSERVED$ ]] || fail failure_signaling 'operator: resolve invalid application exit evidence' "$status_file" 'stop on ambiguous evidence'
   [[ "$wrapper_status" =~ ^(0|[1-9][0-9]*)$|^NOT_STARTED$|^NOT_COMPLETE$ ]] || fail failure_signaling 'operator: resolve invalid wrapper exit evidence' "$status_file" 'stop on ambiguous evidence'
   if [[ "$terminal_outcome" == SUCCEEDED ]]; then
-    [[ "$status_outcome" == SUCCEEDED && "$application_exit" == 0 && "$wrapper_status" == 0 ]] || fail failure_signaling "operator: resolve contradictory success for $granularity" "$status_file" 'stop and retain the run evidence'
+    [[ "$status_outcome" == SUCCEEDED && "$application_exit_status" == 0 && "$wrapper_status" == 0 ]] || fail failure_signaling "operator: resolve contradictory success for $granularity" "$status_file" 'stop and retain the run evidence'
   fi
 done
 
