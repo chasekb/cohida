@@ -5,6 +5,7 @@ root="${COHIDA_CONTRACT_ROOT:-.}"
 compose_file="$root/podman-compose.prod.yml"
 entrypoint="$root/scripts/retrieve-production.sh"
 runner="$root/scripts/run-production.sh"
+monitor="$root/scripts/monitor-retrieval.sh"
 
 require_fixed() {
   local file="$1"
@@ -18,8 +19,10 @@ require_fixed() {
 [[ -f "$compose_file" ]] || { printf 'missing %s\n' "$compose_file" >&2; exit 1; }
 [[ -f "$entrypoint" ]] || { printf 'missing %s\n' "$entrypoint" >&2; exit 1; }
 [[ -f "$runner" ]] || { printf 'missing %s\n' "$runner" >&2; exit 1; }
+[[ -f "$monitor" ]] || { printf 'missing %s\n' "$monitor" >&2; exit 1; }
 bash -n "$entrypoint"
 bash -n "$runner"
+bash -n "$monitor"
 
 require_fixed "$compose_file" 'DB_HOST: cohida-db'
 require_fixed "$compose_file" 'DB_PORT: 5432'
@@ -50,9 +53,27 @@ require_fixed "$entrypoint" 'application connectivity test did not confirm datab
 require_fixed "$entrypoint" 'COHIDA_PREFLIGHT_ONLY:-0'
 require_fixed "$entrypoint" 'for granularity in "${granularities[@]}"; do'
 require_fixed "$entrypoint" 'retrieve-all -s {} -g'
+require_fixed "$entrypoint" 'COHIDA_RETRIEVAL_STATE_ROOT:-$root/outputs/retrieval-runs'
+require_fixed "$entrypoint" 'run_id="$(date -u +%Y%m%dT%H%M%SZ)-${BASHPID}"'
+require_fixed "$entrypoint" 'refusing to duplicate run'
+require_fixed "$entrypoint" 'stdout.log'
+require_fixed "$entrypoint" 'stderr.log'
+require_fixed "$entrypoint" 'application_exit_status'
+require_fixed "$entrypoint" 'capture_timeout="${COHIDA_CAPTURE_TIMEOUT_SECONDS:-86400}"'
+require_fixed "$entrypoint" 'application_status == 124'
+require_fixed "$entrypoint" 'terminal_outcome=SUCCEEDED'
+require_fixed "$entrypoint" 'finish_status=0'
+require_fixed "$entrypoint" 'for granularity in 300 900 3600 21600 86400; do'
+require_fixed "$entrypoint" 'write_status "$granularity" NOT_TESTED'
 require_fixed "$runner" 'if (($# == 0)); then'
 require_fixed "$runner" 'COHIDA_PREFLIGHT_ONLY=1 "$script_dir/retrieve-production.sh"'
 require_fixed "$runner" 'podman-compose -f "$compose_file" run --rm cohida-app "$@"'
+require_fixed "$monitor" 'do not start a duplicate run'
+require_fixed "$monitor" 'terminal_outcome=BLOCKED'
+require_fixed "$monitor" 'partial logs'
+require_fixed "$monitor" 'stale or partial log evidence'
+require_fixed "$monitor" 'contradictory outcome'
+require_fixed "$monitor" 'application_exit_status"'
 
 network_count=$(grep -Fc 'cohida-net:' "$compose_file")
 if ((network_count < 2)); then
