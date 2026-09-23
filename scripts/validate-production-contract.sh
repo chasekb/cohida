@@ -88,7 +88,7 @@ if grep -Eq '(^|[[:space:]])source[[:space:]]' "$monitor"; then
 fi
 require_fixed "$entrypoint" 'sanitize-retrieval-output.sh'
 require_fixed "$workflow" 'github.event.pull_request.head.sha || github.sha'
-require_fixed "$workflow" 'exact_checkout_sha=%s\\n'
+require_fixed "$workflow" 'exact_checkout_sha=%s\n'
 require_fixed "$workflow" 'type=raw,value=ci-${{ github.event_name == '\''pull_request'\'' && github.event.pull_request.head.sha || github.sha }}'
 
 sanitizer_fixture=$(mktemp)
