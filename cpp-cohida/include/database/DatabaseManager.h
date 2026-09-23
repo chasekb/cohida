@@ -8,8 +8,16 @@
 #include "DbException.h"
 #include "../models/DataPoint.h"
 #include "../config/Config.h"
+#include "../utils/FailureLog.h"
 
 namespace database {
+
+struct WriteResult {
+    int written_count = 0;
+    std::vector<utils::FailureRecord> failures;
+
+    bool complete() const { return failures.empty(); }
+};
 
 class DatabaseManager {
 public:
@@ -26,6 +34,7 @@ public:
     
     // Data operations
     int write_data(const std::vector<models::CryptoPriceData>& data_points);
+    WriteResult write_data_detailed(const std::vector<models::CryptoPriceData>& data_points);
     std::vector<models::CryptoPriceData> read_data(const std::string& symbol, 
                                             const std::chrono::system_clock::time_point& start_date,
                                             const std::chrono::system_clock::time_point& end_date);

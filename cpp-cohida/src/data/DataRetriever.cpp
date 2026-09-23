@@ -1,6 +1,7 @@
 #include "data/DataRetriever.h"
 #include "config/Config.h"
 #include "database/DatabaseManager.h"
+#include "utils/FailureLog.h"
 #include <iomanip>
 
 namespace {
@@ -11,6 +12,28 @@ std::string format_time_point(const std::chrono::system_clock::time_point &tp) {
   std::ostringstream oss;
   oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
   return oss.str();
+}
+
+void log_retrieval_record(const std::string &symbol, int granularity,
+                          const std::chrono::system_clock::time_point &start,
+                          const std::chrono::system_clock::time_point &end,
+                          const std::string &stage,
+                          const std::string &category,
+                          const std::string &summary,
+                          const std::string &retry_outcome,
+                          const std::string &symbol_outcome) {
+  const utils::FailureRecord record{
+      utils::failure_log_timestamp(std::chrono::system_clock::now()),
+      symbol,
+      granularity,
+      format_time_point(start),
+      format_time_point(end),
+      stage,
+      category,
+      utils::sanitize_failure_summary(summary),
+      retry_outcome,
+      symbol_outcome};
+  LOG_ERROR("failure_record={}", record.to_json().dump());
 }
 } // anonymous namespace
 
@@ -66,6 +89,11 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
       LOG_INFO("Database already contains up-to-date data for {} (latest: {}). "
                "Skipping retrieval.",
                request.symbol, format_time_point(*latest_db_time));
+      log_retrieval_record(request.symbol, request.granularity,
+                           adjusted_request.start_date, adjusted_request.end_date,
+                           "retrieval", "already_current",
+                           "Data already up to date in database", "not_applicable",
+                           "skipped");
       is_retrieving_ = false;
       return DataRetrievalResult(request.symbol, true, {},
                                  "Data already up-to-date in database");
@@ -103,12 +131,18 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
 
     if (data_points.empty()) {
       LOG_WARN("No data points retrieved for symbol: " + request.symbol);
+      const bool symbol_is_valid = validate_symbol(request.symbol);
+      log_retrieval_record(
+          request.symbol, adjusted_request.granularity,
+          adjusted_request.start_date, adjusted_request.end_date, "retrieval",
+          symbol_is_valid ? "no_data" : "invalid_symbol",
+          symbol_is_valid ? "No data points available"
+                          : "Symbol validation failed",
+          "not_retried", "skipped");
       is_retrieving_ = false;
-      bool success =
-          validate_symbol(request.symbol); // Only success if symbol is valid
-      return DataRetrievalResult(request.symbol, success, {},
-                                 success ? "No data points available"
-                                         : "Invalid symbol");
+      return DataRetrievalResult(request.symbol, false, {},
+                                 symbol_is_valid ? "No data points available"
+                                                 : "Invalid symbol");
     }
 
     LOG_INFO("Successfully retrieved " + std::to_string(data_points.size()) +
@@ -118,6 +152,10 @@ DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
     return DataRetrievalResult(request.symbol, true, data_points);
   } catch (const std::exception &ex) {
     LOG_ERROR("Error retrieving historical data: " + std::string(ex.what()));
+    log_retrieval_record(request.symbol, adjusted_request.granularity,
+                         adjusted_request.start_date, adjusted_request.end_date,
+                         "retrieval", "retrieval_error", ex.what(),
+                         "not_retried", "skipped");
     is_retrieving_ = false;
     return DataRetrievalResult(request.symbol, false, {}, ex.what());
   }
@@ -283,12 +321,12 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
 
   try {
     auto end_date = system_clock::now();
+    system_clock::time_point start_date{};
 
     // Check database for latest timestamp
     database::DatabaseManager db(granularity);
     auto latest_db_time = db.get_latest_timestamp(symbol);
 
-    system_clock::time_point start_date;
     if (latest_db_time) {
       start_date = *latest_db_time + seconds(granularity);
       LOG_INFO(
@@ -299,6 +337,10 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
         LOG_INFO("Database already contains up-to-date data for {}. Nothing to "
                  "retrieve.",
                  symbol);
+        log_retrieval_record(symbol, granularity, start_date, end_date,
+                             "retrieval", "already_current",
+                             "Data already up to date in database",
+                             "not_applicable", "skipped");
         return DataRetrievalResult(symbol, true, {});
       }
     } else {
@@ -315,6 +357,7 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
 
     auto chunk_start = start_date;
     int chunk_count = 0;
+    int failed_chunks = 0;
 
     while (chunk_start < end_date) {
       auto chunk_end = chunk_start + seconds(REQUEST_INTERVAL_SECONDS);
@@ -343,10 +386,21 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
         } else {
           LOG_WARN("Chunk " + std::to_string(chunk_count + 1) +
                    " failed: " + chunk_result.error_message);
+          log_retrieval_record(
+              symbol, granularity, chunk_start, chunk_end, "retrieval_chunk",
+              "chunk_failed",
+              chunk_result.error_message.empty() ? "No data points returned"
+                                                  : chunk_result.error_message,
+              "not_retried", "skipped");
+          failed_chunks++;
         }
       } catch (const std::exception &ex) {
         LOG_WARN("Chunk " + std::to_string(chunk_count + 1) +
                  " failed: " + ex.what());
+        log_retrieval_record(symbol, granularity, chunk_start, chunk_end,
+                             "retrieval_chunk", "chunk_exception", ex.what(),
+                             "not_retried", "skipped");
+        failed_chunks++;
       }
 
       chunk_start = chunk_end + seconds(1);
@@ -364,10 +418,16 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
 
     LOG_INFO("Complete historical data retrieval finished");
 
-    return DataRetrievalResult(symbol, true, all_data_points);
+    return DataRetrievalResult(symbol, failed_chunks == 0, all_data_points,
+                               failed_chunks == 0
+                                   ? ""
+                                   : "One or more retrieval chunks failed");
   } catch (const std::exception &ex) {
     LOG_ERROR("Error in complete historical data retrieval: " +
               std::string(ex.what()));
+    log_retrieval_record(symbol, granularity, start_date, end_date,
+                         "retrieval_all", "retrieval_error", ex.what(),
+                         "not_retried", "skipped");
     return DataRetrievalResult(symbol, false, {}, ex.what());
   }
 }
