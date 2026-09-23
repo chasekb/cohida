@@ -213,29 +213,35 @@ void DatabaseManager::close_connections() {
 
 int DatabaseManager::write_data(
     const std::vector<models::CryptoPriceData> &data_points) {
+  return write_data_detailed(data_points).written_count;
+}
+
+WriteResult DatabaseManager::write_data_detailed(
+    const std::vector<models::CryptoPriceData> &data_points) {
+  WriteResult result;
   if (data_points.empty()) {
     LOG_WARN("No data points provided for writing");
-    return 0;
+    return result;
   }
-
-  int written_count = 0;
 
   try {
     auto conn = _get_connection();
-    pqxx::work txn(*conn);
 
-    // Get schema-qualified table name: schema.table
-    std::string table_name = _get_table_name();
-    std::string schema_name = _get_schema_name();
-    std::string schema_qualified_table = txn.quote_name(schema_name) + "." + txn.quote_name(table_name);
-
-    std::string insert_sql = R"(
-            INSERT INTO )" + schema_qualified_table +
-                             R"(
+    for (const auto &data_point : data_points) {
+      try {
+        // Use an independent transaction for each point.  A PostgreSQL
+        // statement error aborts its transaction, so a shared transaction
+        // cannot safely continue with the remaining symbols.
+        pqxx::work txn(*conn);
+        std::string schema_qualified_table =
+            txn.quote_name(_get_schema_name()) + "." +
+            txn.quote_name(_get_table_name());
+        std::string insert_sql = R"(
+            INSERT INTO )" + schema_qualified_table + R"(
             (symbol, timestamp, open_price, high_price, low_price, close_price, volume, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
-            ON CONFLICT (symbol, timestamp) 
-            DO UPDATE SET 
+            ON CONFLICT (symbol, timestamp)
+            DO UPDATE SET
                 open_price = EXCLUDED.open_price,
                 high_price = EXCLUDED.high_price,
                 low_price = EXCLUDED.low_price,
@@ -243,9 +249,6 @@ int DatabaseManager::write_data(
                 volume = EXCLUDED.volume,
                 updated_at = EXCLUDED.updated_at
         )";
-
-    for (const auto &data_point : data_points) {
-      try {
         std::ostringstream oss;
         oss << data_point.open_price;
         std::string open_str = oss.str();
@@ -266,22 +269,29 @@ int DatabaseManager::write_data(
                  pqxx::params{data_point.symbol,
                               format_time_point(data_point.timestamp), open_str,
                               high_str, low_str, close_str, volume_str});
-        written_count++;
+        txn.commit();
+        result.written_count++;
 
         LOG_DEBUG("Written data point for " + data_point.symbol + " at " +
                   format_time_point(data_point.timestamp));
       } catch (const std::exception &e) {
         LOG_ERROR("Failed to write data point for " + data_point.symbol + ": " +
                   std::string(e.what()));
-        continue;
+        result.failures.push_back(
+            {data_point.symbol, std::string("write failed: ") + e.what()});
       }
     }
 
-    txn.commit();
     _return_connection(std::move(conn));
 
-    LOG_INFO("Successfully wrote " + std::to_string(written_count) +
-             " data points to database");
+    if (result.complete()) {
+      LOG_INFO("Successfully wrote " + std::to_string(result.written_count) +
+               " data points to database");
+    } else {
+      LOG_ERROR("Database write incomplete: " +
+                std::to_string(result.written_count) + " data points written, " +
+                std::to_string(result.failures.size()) + " failed");
+    }
 
   } catch (const std::exception &e) {
     LOG_ERROR("Failed to write data to database: " + std::string(e.what()));
@@ -289,7 +299,7 @@ int DatabaseManager::write_data(
                       std::string(e.what()));
   }
 
-  return written_count;
+  return result;
 }
 
 std::vector<models::CryptoPriceData> DatabaseManager::read_data(
