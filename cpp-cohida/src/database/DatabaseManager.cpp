@@ -276,14 +276,14 @@ WriteResult DatabaseManager::write_data_detailed(
         LOG_ERROR("Failed to write data point for " + data_point.symbol + ": " +
                   std::string(e.what()));
         result.failures.push_back({
-            failure_log_timestamp(std::chrono::system_clock::now()),
+            utils::failure_log_timestamp(std::chrono::system_clock::now()),
             data_point.symbol,
             granularity_,
             format_time_point(data_point.timestamp),
             format_time_point(data_point.timestamp),
             "database_write",
             "database_error",
-            sanitize_failure_summary(e.what()),
+            utils::sanitize_failure_summary(e.what()),
             "not_retried; transaction_rolled_back",
             "not_persisted"});
         LOG_ERROR("failure_record={}", result.failures.back().to_json().dump());
@@ -305,14 +305,14 @@ WriteResult DatabaseManager::write_data_detailed(
     LOG_ERROR("Failed to write data to database: " + std::string(e.what()));
     for (const auto &data_point : data_points) {
       const utils::FailureRecord record{
-          failure_log_timestamp(std::chrono::system_clock::now()),
+          utils::failure_log_timestamp(std::chrono::system_clock::now()),
           data_point.symbol,
           granularity_,
           format_time_point(data_point.timestamp),
           format_time_point(data_point.timestamp),
           "database_write",
           "database_connection_error",
-          sanitize_failure_summary(e.what()),
+          utils::sanitize_failure_summary(e.what()),
           "not_retried; transaction_not_started",
           "not_persisted"};
       LOG_ERROR("failure_record={}", record.to_json().dump());

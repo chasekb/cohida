@@ -318,11 +318,10 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
                                             int granularity,
                                             std::optional<int> max_records) {
   LOG_INFO("Starting complete historical data retrieval for " + symbol);
+  system_clock::time_point start_date{};
+  const auto end_date = system_clock::now();
 
   try {
-    auto end_date = system_clock::now();
-    system_clock::time_point start_date{};
-
     // Check database for latest timestamp
     database::DatabaseManager db(granularity);
     auto latest_db_time = db.get_latest_timestamp(symbol);
