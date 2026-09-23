@@ -56,23 +56,19 @@ fi
 run_id="$(date -u +%Y%m%dT%H%M%SZ)-${BASHPID}"
 run_dir="$state_root/$run_id"
 mkdir -p "$run_dir"
+active_run_tmp="$active_lock/.run_id.$$"
+printf '%s\n' "$run_id" >"$active_run_tmp"
+mv -f -- "$active_run_tmp" "$active_lock/run_id"
 {
-  printf 'run_id=%q\nstarted_at=%q\nprovenance=%q\ncompose_file=%q\nstate_dir=%q\nexpected_granularities=%q\n' \
+  printf 'run_id=%s\nstarted_at=%s\nprovenance=%s\ncompose_file=%s\nstate_dir=%s\nexpected_granularities=%s\n' \
     "$run_id" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" 'cohida/scripts/retrieve-production.sh' "$compose_file" "$run_dir" \
     "${granularities[*]}"
 } >"$run_dir/metadata.env"
 
-sanitize_stream() {
-  sed -E \
-    -e 's/COINBASE_API_KEY=[^[:space:]]*/COINBASE_API_KEY=[REDACTED]/g' \
-    -e 's/COINBASE_API_SECRET=[^[:space:]]*/COINBASE_API_SECRET=[REDACTED]/g' \
-    -e 's/COINBASE_API_PASSPHRASE=[^[:space:]]*/COINBASE_API_PASSPHRASE=[REDACTED]/g' \
-    -e 's/(POSTGRES_DB_PASSWORD|DB_PASSWORD)=[^[:space:]]*/\1=[REDACTED]/g' \
-    -e 's/Authorization: Bearer [^[:space:]]*/Authorization: Bearer [REDACTED]/g'
-}
-
-exec > >(sanitize_stream | tee "$run_dir/stdout.log")
-exec 2> >(sanitize_stream | tee "$run_dir/stderr.log" >&2)
+sanitizer="$script_dir/sanitize-retrieval-output.sh"
+[[ -x "$sanitizer" ]] || { printf 'error: missing retrieval output sanitizer\n' >&2; exit 127; }
+exec > >("$sanitizer" | tee "$run_dir/stdout.log")
+exec 2> >("$sanitizer" | tee "$run_dir/stderr.log" >&2)
 
 write_status() {
   local granularity="$1" outcome="$2" stage="$3" application_exit="$4" wrapper_status="$5" evidence="$6"
@@ -95,7 +91,7 @@ finish_status=1
 finish() {
   local wrapper_status="$finish_status"
   if [[ "$terminal_outcome" == SUCCEEDED ]]; then wrapper_status=0; fi
-  printf 'run_id=%q\nterminal_outcome=%q\nfailing_stage=%q\nowner_action=%q\nevidence_path=%q\nrollback_stop_boundary=%q\n' \
+  printf 'run_id=%s\nterminal_outcome=%s\nfailing_stage=%s\nowner_action=%s\nevidence_path=%s\nrollback_stop_boundary=%s\n' \
     "$run_id" "$terminal_outcome" "$terminal_stage" "$terminal_owner_action" \
     "$terminal_evidence" "$terminal_rollback" >"$run_dir/terminal.env"
   printf 'terminal_outcome=%s failing_stage=%s owner_action=%s evidence_path=%s rollback_stop_boundary=%s\n' \
@@ -158,7 +154,7 @@ if [[ "${COHIDA_PREFLIGHT_ONLY:-0}" == 1 ]]; then
   terminal_owner_action='operator: run the canonical retrieval lane after preflight'
   terminal_rollback='no retrieval was started by this preflight-only invocation'
   terminal_evidence="$run_dir"
-  finish_status=0
+  finish_status=1
   exit 1
 fi
 
