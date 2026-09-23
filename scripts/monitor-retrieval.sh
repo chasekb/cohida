@@ -74,7 +74,7 @@ done
 terminal_mtime="$(stat -c %Y -- "$terminal_file")"
 for log_file in "$run_dir/stdout.log" "$run_dir/stderr.log"; do
   log_mtime="$(stat -c %Y -- "$log_file")"
-  ((log_mtime <= terminal_mtime)) || fail worker_monitor_lifecycle 'operator: resolve evidence written after terminal closure' "$log_file" 'stop on partial evidence'
+  ((log_mtime <= terminal_mtime)) || fail worker_monitor_lifecycle 'operator: resolve stale or partial log evidence written after terminal closure' "$log_file" 'stop on partial evidence'
 done
 
 metadata_run_id="$(field "$metadata_file" run_id)" || fail worker_monitor_lifecycle 'operator: parse restricted run metadata' "$metadata_file" 'reject untrusted evidence'
