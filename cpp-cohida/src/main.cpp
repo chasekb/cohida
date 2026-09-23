@@ -82,9 +82,17 @@ void setup_logging(bool verbose) {
   utils::Logger::set_level(verbose ? "debug" : "info");
 }
 
+void log_write_failures(const database::WriteResult &write_result) {
+  for (const auto &failure : write_result.failures) {
+    LOG_ERROR("Database write missing for symbol {}: {}", failure.symbol,
+              failure.error);
+  }
+}
+
 int main(int argc, char **argv) {
   CLI::App app{"Coinbase Historical Data Retrieval CLI"};
   argv = app.ensure_utf8(argv);
+  int exit_code = 0;
 
   bool verbose = false;
   app.add_flag("--verbose,-v", verbose, "Enable verbose logging");
@@ -235,8 +243,10 @@ int main(int argc, char **argv) {
         if (write_result.complete()) {
           LOG_INFO("Data written to database");
         } else {
+          exit_code = 1;
           LOG_ERROR("Database write incomplete: {} of {} data points written",
                     write_result.written_count, result.data_points.size());
+          log_write_failures(write_result);
         }
 
         // Check file output
@@ -248,11 +258,13 @@ int main(int argc, char **argv) {
           }
         }
       } else {
+        exit_code = 1;
         LOG_ERROR("Data retrieval failed: {}", result.error_message.empty()
                                                    ? "Unknown error"
                                                    : result.error_message);
       }
     } catch (const exception &e) {
+      exit_code = 1;
       LOG_ERROR("Error retrieving data: {}", e.what());
     }
   });
@@ -286,16 +298,20 @@ int main(int argc, char **argv) {
         if (write_result.complete()) {
           LOG_INFO("All data written to database");
         } else {
+          exit_code = 1;
           LOG_ERROR("Database write incomplete: {} of {} data points written",
                     write_result.written_count, result.data_points.size());
+          log_write_failures(write_result);
         }
       } else {
+        exit_code = 1;
         LOG_ERROR("Failed to retrieve all data: {}",
                   result.error_message.empty() ? "Unknown error"
                                                : result.error_message);
       }
 
     } catch (const exception &e) {
+      exit_code = 1;
       LOG_ERROR("Error in retrieve-all: {}", e.what());
     }
   });
@@ -531,5 +547,5 @@ int main(int argc, char **argv) {
   });
 
   CLI11_PARSE(app, argc, argv);
-  return 0;
+  return exit_code;
 }

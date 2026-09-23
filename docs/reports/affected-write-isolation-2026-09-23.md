@@ -4,7 +4,7 @@
 
 `DatabaseManager::write_data_detailed` now executes each data point in its own PostgreSQL transaction. A statement error rolls back only that point, allowing later symbols to be attempted without reusing an aborted transaction. The result reports the number written and a symbol/error entry for every failed point. The existing `write_data` API remains available and returns the successful count for compatibility.
 
-CLI retrieval commands use the detailed result and log an incomplete/error outcome instead of claiming that the batch was written when any point failed. Values are passed through unchanged; the repair does not clamp, zero-fill, coerce, widen the schema, or mark a failed point as persisted.
+CLI retrieval commands use the detailed result and log an incomplete/error outcome instead of claiming that the batch was written when any point failed. Each affected symbol is emitted with its sanitized error detail, and retrieval commands return a non-zero exit status for partial writes, retrieval failures, or connection/setup exceptions. Values are passed through unchanged; the repair does not clamp, zero-fill, coerce, widen the schema, or mark a failed point as persisted.
 
 ## Rollback
 
