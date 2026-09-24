@@ -6,6 +6,8 @@ compose_file="$root/podman-compose.prod.yml"
 entrypoint="$root/scripts/retrieve-production.sh"
 runner="$root/scripts/run-production.sh"
 monitor="$root/scripts/monitor-retrieval.sh"
+sanitizer="$root/scripts/sanitize-retrieval-output.sh"
+workflow="$root/.github/workflows/deploy.yml"
 
 require_fixed() {
   local file="$1"
@@ -20,9 +22,12 @@ require_fixed() {
 [[ -f "$entrypoint" ]] || { printf 'missing %s\n' "$entrypoint" >&2; exit 1; }
 [[ -f "$runner" ]] || { printf 'missing %s\n' "$runner" >&2; exit 1; }
 [[ -f "$monitor" ]] || { printf 'missing %s\n' "$monitor" >&2; exit 1; }
+[[ -x "$sanitizer" ]] || { printf 'missing executable %s\n' "$sanitizer" >&2; exit 1; }
+[[ -f "$workflow" ]] || { printf 'missing %s\n' "$workflow" >&2; exit 1; }
 bash -n "$entrypoint"
 bash -n "$runner"
 bash -n "$monitor"
+bash -n "$sanitizer"
 
 require_fixed "$compose_file" 'DB_HOST: cohida-db'
 require_fixed "$compose_file" 'DB_PORT: 5432'
@@ -55,6 +60,7 @@ require_fixed "$entrypoint" 'for granularity in "${granularities[@]}"; do'
 require_fixed "$entrypoint" 'retrieve-all -s {} -g'
 require_fixed "$entrypoint" 'COHIDA_RETRIEVAL_STATE_ROOT:-$root/outputs/retrieval-runs'
 require_fixed "$entrypoint" 'run_id="$(date -u +%Y%m%dT%H%M%SZ)-${BASHPID}"'
+require_fixed "$entrypoint" 'mv -f -- "$active_run_tmp" "$active_lock/run_id"'
 require_fixed "$entrypoint" 'refusing to duplicate run'
 require_fixed "$entrypoint" 'stdout.log'
 require_fixed "$entrypoint" 'stderr.log'
@@ -62,7 +68,7 @@ require_fixed "$entrypoint" 'application_exit_status'
 require_fixed "$entrypoint" 'capture_timeout="${COHIDA_CAPTURE_TIMEOUT_SECONDS:-86400}"'
 require_fixed "$entrypoint" 'application_status == 124'
 require_fixed "$entrypoint" 'terminal_outcome=SUCCEEDED'
-require_fixed "$entrypoint" 'finish_status=0'
+require_fixed "$entrypoint" 'finish_status=1'
 require_fixed "$entrypoint" 'for granularity in 300 900 3600 21600 86400; do'
 require_fixed "$entrypoint" 'write_status "$granularity" NOT_TESTED'
 require_fixed "$runner" 'if (($# == 0)); then'
@@ -74,6 +80,39 @@ require_fixed "$monitor" 'partial logs'
 require_fixed "$monitor" 'stale or partial log evidence'
 require_fixed "$monitor" 'contradictory outcome'
 require_fixed "$monitor" 'application_exit_status"'
+require_fixed "$monitor" 'COHIDA_EVIDENCE_MAX_AGE_SECONDS:-300'
+require_fixed "$monitor" 'valid_run_id()'
+if grep -Eq '(^|[[:space:]])source[[:space:]]' "$monitor"; then
+  printf 'monitor must not source caller-controlled evidence\n' >&2
+  exit 1
+fi
+require_fixed "$entrypoint" 'sanitize-retrieval-output.sh'
+require_fixed "$workflow" 'github.event.pull_request.head.sha || github.sha'
+require_fixed "$workflow" 'exact_checkout_sha=%s\n'
+require_fixed "$workflow" 'type=raw,value=ci-${{ github.event_name == '\''pull_request'\'' && github.event.pull_request.head.sha || github.sha }}'
+
+sanitizer_fixture=$(mktemp)
+sanitizer_output=$(mktemp)
+trap 'rm -f "$sanitizer_fixture" "$sanitizer_output"' EXIT
+key_value='quoted-key-fixture'
+secret_value='plain-secret-fixture'
+lower_token='lower-case-fixture'
+structured_token='structured-fixture'
+application_token='application-fixture'
+printf '%s\n' \
+  "COINBASE_API_KEY=\"$key_value\" COINBASE_API_SECRET=$secret_value" \
+  "authorization: Bearer $lower_token" \
+  "{\"Authorization\":\"Basic $structured_token\"}" \
+  "Authorization: Bearer $application_token" >"$sanitizer_fixture"
+"$sanitizer" <"$sanitizer_fixture" >"$sanitizer_output"
+if grep -Eq "$key_value|$secret_value|$lower_token|$structured_token|$application_token" "$sanitizer_output"; then
+  printf 'sanitizer leaked an adversarial secret fixture\n' >&2
+  exit 1
+fi
+if [[ $(grep -oF '[REDACTED]' "$sanitizer_output" | wc -l) -lt 5 ]]; then
+  printf 'sanitizer did not redact every adversarial fixture\n' >&2
+  exit 1
+fi
 
 network_count=$(grep -Fc 'cohida-net:' "$compose_file")
 if ((network_count < 2)); then
