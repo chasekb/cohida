@@ -71,7 +71,7 @@ TEST_F(DatabaseManagerTest, IsolatesFailedPointAndCommitsFollowingPoints) {
     EXPECT_EQ(result.written_count, 2);
     ASSERT_EQ(result.failures.size(), 1);
     EXPECT_EQ(result.failures.front().symbol, "MIXED-TOO-LARGE");
-    EXPECT_FALSE(result.failures.front().error.empty());
+    EXPECT_FALSE(result.failures.front().error_summary.empty());
     EXPECT_FALSE(db_manager.read_data(
         "MIXED-OK-2",
         std::chrono::system_clock::time_point{} - std::chrono::seconds(1),

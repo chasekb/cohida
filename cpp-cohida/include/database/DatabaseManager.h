@@ -8,17 +8,13 @@
 #include "DbException.h"
 #include "../models/DataPoint.h"
 #include "../config/Config.h"
+#include "../utils/FailureLog.h"
 
 namespace database {
 
-struct WriteFailure {
-    std::string symbol;
-    std::string error;
-};
-
 struct WriteResult {
     int written_count = 0;
-    std::vector<WriteFailure> failures;
+    std::vector<utils::FailureRecord> failures;
 
     bool complete() const { return failures.empty(); }
 };

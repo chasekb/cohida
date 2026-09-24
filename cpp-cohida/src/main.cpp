@@ -84,8 +84,7 @@ void setup_logging(bool verbose) {
 
 void log_write_failures(const database::WriteResult &write_result) {
   for (const auto &failure : write_result.failures) {
-    LOG_ERROR("Database write missing for symbol {}: {}", failure.symbol,
-              failure.error);
+    LOG_ERROR("failure_record={}", failure.to_json().dump());
   }
 }
 

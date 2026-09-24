@@ -141,6 +141,7 @@ add_executable(cohida-unit-tests
     tests/unit/test_database_manager.cpp
     tests/unit/test_data_point.cpp
     tests/unit/test_data_retriever.cpp
+    tests/unit/test_failure_log.cpp
     tests/unit/test_technical_indicators.cpp
     tests/unit/test_feature_engineer.cpp
     tests/unit/test_preprocessor.cpp
