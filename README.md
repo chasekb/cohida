@@ -127,6 +127,19 @@ preflight fails:
 ./scripts/retrieve-production.sh 3600 86400
 ```
 
+Each canonical retrieval creates a run-scoped evidence directory below
+`outputs/retrieval-runs` (override with `COHIDA_RETRIEVAL_STATE_ROOT`). The
+directory retains sanitized stdout/stderr, provenance, separate application
+and wrapper/capture statuses, and terminal outcomes for 300, 900, 3600, 21600,
+and 86400 seconds. A second invocation refuses to duplicate an active run.
+The bounded monitor only reads an existing run and fails closed on missing,
+partial, stale, or contradictory evidence; it never starts or kills a run:
+
+```bash
+./scripts/monitor-retrieval.sh
+./scripts/monitor-retrieval.sh <run-id>
+```
+
 For a one-off production application command, use the database-starting runner;
 it performs the same preflight before passing arguments to the app container:
 

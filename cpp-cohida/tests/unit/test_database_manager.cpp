@@ -15,6 +15,19 @@ protected:
     static void TearDownTestSuite() {
         // Logger cleanup handled by destructor
     }
+
+    static models::CryptoPriceData point(const std::string& symbol,
+                                         int seconds,
+                                         const std::string& price = "50000.0") {
+        return models::CryptoPriceData(
+            symbol,
+            std::chrono::system_clock::time_point{} + std::chrono::seconds(seconds),
+            models::Decimal(price.c_str()),
+            models::Decimal(price.c_str()),
+            models::Decimal(price.c_str()),
+            models::Decimal(price.c_str()),
+            models::Decimal("100.5"));
+    }
 };
 
 TEST_F(DatabaseManagerTest, TestConnection) {
@@ -45,6 +58,38 @@ TEST_F(DatabaseManagerTest, TestWriteAndReadData) {
     auto one_hour_ago = now - std::chrono::hours(1);
     auto data = db_manager.read_data("BTC-USD", one_hour_ago, now);
     EXPECT_FALSE(data.empty());
+}
+
+TEST_F(DatabaseManagerTest, IsolatesFailedPointAndCommitsFollowingPoints) {
+    database::DatabaseManager db_manager;
+    auto result = db_manager.write_data_detailed({
+        point("MIXED-OK-1", 1),
+        point("MIXED-TOO-LARGE", 2, "10000000000.0"),
+        point("MIXED-OK-2", 3)
+    });
+
+    EXPECT_EQ(result.written_count, 2);
+    ASSERT_EQ(result.failures.size(), 1);
+    EXPECT_EQ(result.failures.front().symbol, "MIXED-TOO-LARGE");
+    EXPECT_FALSE(result.failures.front().error_summary.empty());
+    EXPECT_FALSE(db_manager.read_data(
+        "MIXED-OK-2",
+        std::chrono::system_clock::time_point{} - std::chrono::seconds(1),
+        std::chrono::system_clock::time_point{} + std::chrono::seconds(4)).empty());
+}
+
+TEST_F(DatabaseManagerTest, ReportsAllFailedPointsWithoutClaimingSuccess) {
+    database::DatabaseManager db_manager;
+    auto result = db_manager.write_data_detailed({
+        point("ALL-TOO-LARGE-1", 11, "10000000000.0"),
+        point("ALL-TOO-LARGE-2", 12, "10000000000.0")
+    });
+
+    EXPECT_EQ(result.written_count, 0);
+    EXPECT_FALSE(result.complete());
+    ASSERT_EQ(result.failures.size(), 2);
+    EXPECT_EQ(result.failures[0].symbol, "ALL-TOO-LARGE-1");
+    EXPECT_EQ(result.failures[1].symbol, "ALL-TOO-LARGE-2");
 }
 
 TEST_F(DatabaseManagerTest, TestDataCount) {
