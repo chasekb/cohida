@@ -113,6 +113,12 @@ fail_preflight() {
 }
 
 printf 'run_id=%s state_dir=%s\n' "$run_id" "$run_dir"
+
+printf 'Pulling latest cohida-app image from %s\n' "$compose_file"
+if ! podman-compose -f "$compose_file" pull cohida-app; then
+  fail_preflight scheduler_coordination 'operator: repair cohida-app image pull'
+fi
+
 printf 'Starting production database service from %s\n' "$compose_file"
 if ! podman-compose -f "$compose_file" up -d db; then fail_preflight scheduler_coordination 'operator: repair compose database startup'; fi
 if ! podman network inspect "$db_network" >/dev/null; then fail_preflight scheduler_coordination 'operator: repair production network contract'; fi

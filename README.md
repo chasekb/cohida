@@ -96,6 +96,11 @@ podman-compose up --build
 Pull and run the latest production-ready image from GitHub Container Registry (GHCR):
 
 ```bash
+# Pull the latest image before (re)starting — podman-compose up/run does not
+# re-pull a tag that already exists locally, so skipping this step silently
+# reuses whatever image was last pulled even after a new CI build lands.
+podman-compose -f podman-compose.prod.yml pull cohida-app
+
 # Start the production database and application in the background. The app has
 # an explicit healthy-database dependency, so ordinary up/run commands do not
 # launch application work before PostgreSQL is ready.
