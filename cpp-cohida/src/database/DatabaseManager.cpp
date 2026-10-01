@@ -226,11 +226,12 @@ WriteResult DatabaseManager::write_data_detailed(
 
   try {
     auto conn = _get_connection();
+    pqxx::work txn(*conn);
     for (const auto &data_point : data_points) {
       try {
-        // PostgreSQL aborts a transaction after a statement error. Keep each
-        // point independent so one bad symbol does not hide later successes.
-        pqxx::work txn(*conn);
+        // Keep all rows in one transaction, while using a savepoint to retain
+        // per-row isolation when PostgreSQL rejects an individual row.
+        txn.exec("SAVEPOINT cohida_write_row");
         std::string schema_qualified_table =
             txn.quote_name(_get_schema_name()) + "." +
             txn.quote_name(_get_table_name());
@@ -267,12 +268,20 @@ WriteResult DatabaseManager::write_data_detailed(
                  pqxx::params{data_point.symbol,
                               format_time_point(data_point.timestamp), open_str,
                               high_str, low_str, close_str, volume_str});
-        txn.commit();
+        txn.exec("RELEASE SAVEPOINT cohida_write_row");
         result.written_count++;
 
         LOG_DEBUG("Written data point for " + data_point.symbol + " at " +
                   format_time_point(data_point.timestamp));
       } catch (const std::exception &e) {
+        try {
+          txn.exec("ROLLBACK TO SAVEPOINT cohida_write_row");
+          txn.exec("RELEASE SAVEPOINT cohida_write_row");
+        } catch (const std::exception &rollback_error) {
+          LOG_ERROR("Failed to roll back failed data point for " +
+                    data_point.symbol + ": " + rollback_error.what());
+          throw;
+        }
         LOG_ERROR("Failed to write data point for " + data_point.symbol + ": " +
                   std::string(e.what()));
         result.failures.push_back({
@@ -290,6 +299,7 @@ WriteResult DatabaseManager::write_data_detailed(
       }
     }
 
+    txn.commit();
     _return_connection(std::move(conn));
 
     if (result.complete()) {
