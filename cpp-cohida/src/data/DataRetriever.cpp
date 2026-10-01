@@ -68,11 +68,14 @@ DataRetrievalResult DataRetriever::retrieve_historical_data(
 
 DataRetrievalResult
 DataRetriever::retrieve_historical_data(const DataRetrievalRequest &request) {
-  DataRetrievalRequest adjusted_request = request;
-
-  // Check database for latest timestamp to avoid redundant downloads
   database::DatabaseManager db(request.granularity);
-  auto latest_db_time = db.get_latest_timestamp(request.symbol);
+  return retrieve_historical_data(request, db.get_latest_timestamp(request.symbol));
+}
+
+DataRetrievalResult DataRetriever::retrieve_historical_data(
+    const DataRetrievalRequest &request,
+    const std::optional<system_clock::time_point> &latest_db_time) {
+  DataRetrievalRequest adjusted_request = request;
 
   if (latest_db_time) {
     // If we have data in DB, we only need to fetch from latest_db_time +
@@ -217,7 +220,8 @@ DataRetriever::_transform_api_data(const std::vector<json> &raw_data,
 
 system_clock::time_point DataRetriever::_find_earliest_available_data(
     const std::string &symbol, int granularity,
-    system_clock::time_point max_test_date) {
+    system_clock::time_point max_test_date,
+    const std::optional<system_clock::time_point> &latest_db_time) {
   LOG_INFO("Finding earliest available data for " + symbol);
 
   const int MAX_YEARS_BACK = 10;
@@ -256,7 +260,7 @@ system_clock::time_point DataRetriever::_find_earliest_available_data(
     try {
       DataRetrievalRequest request(symbol, test_start, test_end, granularity,
                                    true);
-      auto test_result = retrieve_historical_data(request);
+      auto test_result = retrieve_historical_data(request, latest_db_time);
 
       if (test_result.success && !test_result.data_points.empty()) {
         // Found data! Get the earliest timestamp from this data
@@ -343,8 +347,8 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
         return DataRetrievalResult(symbol, true, {});
       }
     } else {
-      start_date = _find_earliest_available_data(symbol, granularity,
-                                                 end_date - years{10});
+      start_date = _find_earliest_available_data(
+          symbol, granularity, end_date - years{10}, latest_db_time);
       LOG_INFO("Auto-detected earliest data for " + symbol + ": " +
                format_time_point(start_date));
     }
@@ -371,7 +375,7 @@ DataRetriever::retrieve_all_historical_data(const std::string &symbol,
       try {
         DataRetrievalRequest request(symbol, chunk_start, chunk_end,
                                      granularity, true);
-        auto chunk_result = retrieve_historical_data(request);
+        auto chunk_result = retrieve_historical_data(request, latest_db_time);
 
         if (chunk_result.success && !chunk_result.data_points.empty()) {
           all_data_points.insert(

@@ -96,11 +96,15 @@ private:
     bool is_retrieving_;
 
     DataRetrievalResult retrieve_historical_data(const DataRetrievalRequest& request);
+    DataRetrievalResult retrieve_historical_data(
+        const DataRetrievalRequest& request,
+        const std::optional<std::chrono::system_clock::time_point>& latest_db_time);
     std::vector<models::CryptoPriceData> _fetch_data_from_api(const DataRetrievalRequest& request);
     std::vector<models::CryptoPriceData> _transform_api_data(const std::vector<json>& raw_data,
                                                           const std::string& symbol);
     system_clock::time_point _find_earliest_available_data(const std::string& symbol, int granularity,
-                                                        system_clock::time_point max_test_date);
+                                                        system_clock::time_point max_test_date,
+                                                        const std::optional<system_clock::time_point>& latest_db_time);
 
     void _log_retrieval_progress(int current, int total);
 };
